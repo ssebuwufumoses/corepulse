@@ -1,30 +1,37 @@
-# ⚡ CorePulse Engine
+# ⚡ CorePulse (v1.0.0)
 
-![WordPress](https://img.shields.io/badge/WordPress-6.0+-blue.svg)
+![Version](https://img.shields.io/badge/Version-1.0.0-00d2ff.svg)
+![WordPress](https://img.shields.io/badge/WordPress-6.0+-0073aa.svg)
 ![PHP](https://img.shields.io/badge/PHP-7.4+-777bb4.svg)
 ![License](https://img.shields.io/badge/License-GPLv2-green.svg)
 
-**Enterprise-grade WordPress performance engine for real-time asset monitoring, conditional script loading, and hydration optimization.**
+**CorePulse** is a server-centric WordPress performance engine engineered to surgically eliminate frontend bloat and optimize Core Web Vitals. 
 
-CorePulse is a server-centric hydration and performance monitoring engine designed to shift the load back to the server and give you total control over your Core Web Vitals.
+Modern WordPress development has a hidden performance killer: **Monolithic Hydration and Structural Bloat**. As sites increasingly rely on heavy visual page builders and massive JavaScript frameworks, the processing burden is shifted entirely to the user's browser. CorePulse gives developers an "X-Ray" view of this bloat and provides the tools to intercept and neutralize it before it reaches the browser.
 
-## Key Features
+## The Core Engines
 
-* **Asset Autopsy HUD:** Real-time Web Vitals and payload tracking directly in your WordPress admin bar.
-* **Sniper Engine:** Conditionally kill heavy scripts and styles globally or on a per-page basis.
-* **Boost Engine:** 1-click preload injection for Largest Contentful Paint (LCP) assets.
-* **WCAG Guard:** Real-time heuristic accessibility tracing to ensure compliance.
+* **Asset Autopsy (HUD):** A sleek, dark-mode slide-out dashboard detailing the exact monolithic libraries loading on the current page. It tracks live TTFB (Time to First Byte), INP Delay, CLS (Cumulative Layout Shift), and LCP render-blocking issues.
+* **Sniper Engine (Kill Switch):** Conditionally dequeue heavy scripts and stylesheets without writing a single line of PHP. Kill a script globally, kill it on a single page, or kill it everywhere *except* a specific page.
+* **Boost Engine:** Accelerate your Critical Rendering Path. Click "BOOST" on any heavy hero image or primary font, and CorePulse dynamically injects `<link rel="preload">` tags to the very top of your document.
+* **WCAG Guard:** A zero-dependency JavaScript engine that instantly audits the rendered DOM for structural accessibility failures (missing `alt` tags, unlabelled inputs). Clicking "TRACE" visually highlights the exact violating element on the page.
 
-## Tech Stack & Architecture
-CorePulse is built with a focus on modern WordPress development standards:
-* **PHP 8.x Optimized** (Backwards compatible to 7.4)
-* **Vanilla JS** (Zero jQuery dependency for the frontend HUD)
-* **WordPress Native Hooks** (Seamless integration without overriding core behavior)
+## Enterprise Architecture
 
-## Installation (Developer Preview)
-1. Download the latest `corepulse.zip` from the [Releases](../../releases) page.
-2. Upload to your WordPress dashboard via **Plugins > Add New > Upload Plugin**.
-3. Activate and navigate to the CorePulse settings to start optimizing.
+* **100% Local Processing:** CorePulse does NOT "phone home" or use third-party APIs. All metrics are calculated entirely locally in the user's browser using native `PerformanceObserver` APIs.
+* **Emergency Restore Safety Net:** Aggressively dequeuing JavaScript can break a page. CorePulse injects a lightweight `window.onerror` trap. If you kill a load-bearing script that crashes the layout, the system drops an "Emergency Restore" button to instantly revive scripts and reload.
+* **Builder Isolation:** To protect your editing canvas, CorePulse automatically detects when you are actively designing in Elementor, Divi, Beaver Builder, Oxygen, Bricks, or Gutenberg, and silently hides its UI.
+
+## Installation & Testing
+
+1. Download the `v1.0.0` zip file from the [Releases page](../../releases/latest).
+2. Upload and activate the plugin through your WordPress Admin Dashboard.
+3. Navigate to **Settings > CorePulse** to adjust your performance warning/danger thresholds.
+4. Visit the live frontend of your site (while logged in as an Administrator).
+5. **Open the HUD** using one of three methods:
+   * Click the floating green pulse button in the bottom-left corner.
+   * Click the green "CorePulse: Active" node in the top Admin Bar.
+   * Use the keyboard shortcut: `Ctrl + Shift + X`.
 
 ---
-*Engineered and maintained by [Moses Ssebuwufu](https://github.com/ssebuwufumoses).*
+*Engineered by [Moses Ssebuwufu](https://github.com/ssebuwufumoses).*
