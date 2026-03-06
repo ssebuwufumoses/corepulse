@@ -53,9 +53,7 @@ CorePulse is built for the long haul. Here is what is currently being engineered
 
 **Q: Will the HUD be visible to my website visitors?** <br>
 **A:** No. The Asset Autopsy HUD is strictly protected. It only renders for users with `manage_options` capabilities (Administrators) who are logged in.
-
 <br>
-
 **Q: Can "Sniping" a script break my site?** <br>
 **A:** Yes, if you dequeue a critical file. However, CorePulse includes an **Emergency Restore** feature. If a fatal JS error is detected after a change, a restore button will appear to let you instantly revert.
 
