@@ -44,7 +44,7 @@ CorePulse is built for the long haul. Here is what is currently being engineered
 ---
 *Engineered by [Moses Ssebuwufu](https://github.com/ssebuwufumoses).*
 
-## ❓ Frequently Asked Questions
+## Frequently Asked Questions
 
 **Q: Does CorePulse replace caching plugins like WP Rocket or LiteSpeed?**
 **A:** No. CorePulse is a *Performance Engine*, not a cache. While caching speeds up delivery, CorePulse reduces the actual work the browser has to do (Hydration/DOM size). They work perfectly together.
