@@ -1,0 +1,421 @@
+@import url('https://fonts.googleapis.com/css2?family=Questrial&display=swap');
+
+.pulse-icon {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    background: #00ff00;
+    border-radius: 50%;
+    margin-right: 6px;
+    box-shadow: 0 0 5px #00ff00;
+    animation: pulse-animation 1.5s infinite;
+    vertical-align: middle;
+}
+
+@keyframes pulse-animation {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.4); opacity: 0.6; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+#wp-admin-bar-corepulse-status .ab-item {
+    font-weight: bold !important;
+}
+
+#pulse-score {
+    color: #00ff00;
+}
+
+#corepulse-hud {
+    position: fixed !important;
+    top: 0 !important;
+    right: -400px;
+    width: 350px;
+    height: 100vh;
+    background: #1d2327 !important;
+    color: #f0f0f1 !important;
+    z-index: 9999999 !important;
+    box-shadow: -5px 0 15px rgba(0,0,0,0.5);
+    transition: right 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    padding: 20px;
+    overflow-y: auto;
+    border-left: 2px solid #00ff00;
+    box-sizing: border-box;
+}
+
+#corepulse-hud.corepulse-hud-active {
+    right: 0 !important;
+}
+
+.corepulse-hud-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #3c434a;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+}
+
+.corepulse-hud-header h3 {
+    margin: 0;
+    color: #f0f0f1;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    font-family: 'Questrial', sans-serif !important;
+    letter-spacing: 0.5px;
+}
+
+#corepulse-hud-close {
+    background: none;
+    border: none;
+    color: #ff4444;
+    font-size: 1.75rem;
+    cursor: pointer;
+    line-height: 1;
+}
+
+/* Stat Grid UI */
+.corepulse-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* Updated to 3 columns */
+    gap: 12px;
+    margin-bottom: 25px;
+}
+
+.corepulse-stat-box {
+    background: #2c3338;
+    padding: 12px 8px;
+    border-radius: 6px;
+    border: 1px solid #3c434a;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+
+.corepulse-stat-box h4 {
+    margin: 0 0 6px 0 !important;
+    color: #a7aaad !important;
+    font-size: 0.625rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    font-family: 'Questrial', sans-serif !important;
+}
+
+#corepulse-hud-weight, 
+#corepulse-hud-css-weight,
+#corepulse-hud-dom, 
+#corepulse-hud-inp,
+#corepulse-hud-ttfb,
+#corepulse-hud-cls {
+    margin: 0 !important;
+    font-size: 1.0625rem !important;
+    font-weight: 700 !important;
+    font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+}
+
+#corepulse-hud-inp, #corepulse-hud-ttfb, #corepulse-hud-cls {
+    color: #a7aaad;
+}
+
+/* Issues & Errors Lists */
+.corepulse-issues ul, .corepulse-errors ul, .corepulse-graveyard ul, .corepulse-wcag ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.corepulse-issues li, .corepulse-errors li, .corepulse-graveyard li, .corepulse-wcag li {
+    background: #2c3338;
+    padding: 12px;
+    margin-bottom: 8px;
+    border-left: 3px solid #ffcc00;
+    font-size: 0.8125rem;
+    color: #f0f0f1;
+}
+
+.corepulse-errors li { border-left-color: #a155ff; }
+.corepulse-graveyard li { border-left-color: #ff4444; }
+.corepulse-wcag li { border-left-color: #00d2ff; }
+
+#corepulse-hud .corepulse-issues h4,
+#corepulse-hud .corepulse-errors h4,
+#corepulse-hud .corepulse-graveyard h4,
+#corepulse-hud .corepulse-wcag h4 {
+    font-size: 0.875rem !important;
+    font-weight: 600 !important;
+    color: #a7aaad !important;
+    text-transform: uppercase !important;
+    margin: 30px 0 10px 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    line-height: 1.2 !important;
+    font-family: 'Questrial', sans-serif !important;
+    letter-spacing: 1px !important;
+}
+
+#corepulse-hud .corepulse-issues h4 svg,
+#corepulse-hud .corepulse-errors h4 svg,
+#corepulse-hud .corepulse-graveyard h4 svg,
+#corepulse-hud .corepulse-wcag h4 svg {
+    margin-right: 8px !important;
+}
+
+/* Action Buttons (Kill / Boost) */
+.corepulse-kill-toggle {
+    padding: 2px 8px !important;
+    border-radius: 3px !important;
+    cursor: pointer !important;
+    font-size: 10px !important;
+    font-weight: bold !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    transition: all 0.2s ease !important;
+    min-width: auto !important;
+    text-align: center !important;
+}
+
+.corepulse-btn-kill {
+    background-color: rgba(255, 68, 68, 0.15) !important;
+    color: #ff4444 !important;
+    border: 1px solid rgba(255, 68, 68, 0.3) !important;
+}
+
+.corepulse-btn-kill:hover {
+    background-color: #ff4444 !important;
+    color: #fff !important;
+}
+
+/* Boost Button */
+.corepulse-btn-boost {
+    background-color: rgba(0, 210, 255, 0.1) !important;
+    color: #00d2ff !important;
+    border: 1px solid rgba(0, 210, 255, 0.3) !important;
+    margin-right: 5px !important;
+}
+
+.corepulse-btn-boost:hover {
+    background-color: rgba(0, 210, 255, 0.25) !important;
+    color: #00d2ff !important;
+    border-color: #00d2ff !important;
+}
+
+.corepulse-btn-boost.active {
+    background-color: #00d2ff !important;
+    color: #1d2327 !important;
+    border: 1px solid #00d2ff !important;
+    box-shadow: none !important;
+    opacity: 0.9 !important;
+}
+
+.corepulse-btn-revive {
+    background-color: rgba(0, 255, 0, 0.15) !important;
+    color: #00ff00 !important;
+    border: 1px solid rgba(0, 255, 0, 0.3) !important;
+}
+
+.corepulse-btn-revive:hover {
+    background-color: #00ff00 !important;
+    color: #000 !important;
+}
+
+/* Sniper Engine UI */
+#corepulse-sniper-modal {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000000;
+    backdrop-filter: blur(3px);
+}
+
+.corepulse-sniper-content {
+    background: #1d2327;
+    padding: 25px 20px;
+    border-radius: 6px;
+    border: 1px solid #ffcc00;
+    width: 85%;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+}
+
+.corepulse-sniper-content h4 {
+    color: #ffcc00 !important;
+    margin: 0 0 15px 0 !important;
+    font-size: 1.1rem !important;
+    text-transform: uppercase;
+    font-family: 'Questrial', sans-serif !important;
+    letter-spacing: 1px;
+}
+
+.corepulse-sniper-btn {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 10px;
+    background: #2c3338;
+    color: #f0f0f1;
+    border: 1px solid #3c434a;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.corepulse-sniper-btn:hover {
+    background: #ff4444;
+    color: #fff;
+    border-color: #ff4444;
+}
+
+#corepulse-sniper-cancel {
+    background: none;
+    border: none;
+    color: #a7aaad;
+    cursor: pointer;
+    font-size: 0.75rem;
+    margin-top: 10px;
+    text-decoration: underline;
+}
+
+#corepulse-sniper-cancel:hover {
+    color: #fff;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 400px) {
+    #corepulse-hud {
+        width: 100vw !important;
+        right: -100vw !important;
+    }
+    
+    .corepulse-stat-box h4 {
+        font-size: 0.5625rem !important;
+    }
+    
+    #corepulse-hud-weight, 
+    #corepulse-hud-css-weight,
+    #corepulse-hud-dom, 
+    #corepulse-hud-inp,
+    #corepulse-hud-ttfb,
+    #corepulse-hud-cls {
+        font-size: 0.875rem !important;
+    }
+}
+
+/* Visual WCAG Tracer & Size Badges */
+.corepulse-trace-highlight {
+    outline: 4px dashed #ff0000 !important;
+    outline-offset: 4px !important;
+    box-shadow: 0 0 20px rgba(255, 0, 0, 0.7) !important;
+    scroll-margin-top: 150px;
+    transition: all 0.3s ease;
+}
+
+.corepulse-wcag-trace-btn {
+    background: transparent;
+    border: 1px solid #00d2ff;
+    color: #00d2ff;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 10px;
+    cursor: pointer;
+    margin-left: 10px;
+    text-transform: uppercase;
+    transition: all 0.2s ease;
+}
+
+.corepulse-wcag-trace-btn:hover {
+    background: #00d2ff;
+    color: #1d2327;
+}
+
+.corepulse-size-badge {
+    background: #1d2327;
+    padding: 2px 5px;
+    border-radius: 3px;
+    font-size: 10px;
+    color: #ffcc00;
+    margin-left: 5px;
+    border: 1px solid #3c434a;
+    font-family: monospace;
+}
+
+.corepulse-size-badge.external {
+    color: #a7aaad;
+}
+
+/* IO Tools (Import/Export) */
+.corepulse-io-tools {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#corepulse-export-btn, #corepulse-import-btn {
+    background: transparent;
+    border: 1px solid #3c434a;
+    color: #a7aaad;
+    border-radius: 4px;
+    padding: 4px 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+#corepulse-export-btn:hover, #corepulse-import-btn:hover {
+    color: #fff;
+    border-color: #00ff00;
+}
+
+/* Floating Node Trigger */
+#corepulse-floating-trigger {
+    position: fixed;
+    bottom: 25px;
+    left: 25px;
+    background: #1d2327;
+    border: 2px solid #3c434a;
+    border-radius: 50%;
+    width: 45px;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999998; 
+    cursor: pointer;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.6);
+    transition: all 0.2s ease;
+}
+
+#corepulse-floating-trigger:hover {
+    border-color: #00ff00;
+    transform: scale(1.1);
+}
+
+@media (max-width: 400px) {
+    #corepulse-floating-trigger {
+        bottom: 15px;
+        left: 15px;
+        width: 35px;
+        height: 35px;
+    }
+}
+
+/* Hide HUD completely inside Page Builders */
+body.elementor-editor-active #corepulse-hud,
+body.elementor-editor-active #corepulse-floating-trigger,
+body.wp-admin #corepulse-hud,
+body.wp-admin #corepulse-floating-trigger,
+body.block-editor-page #corepulse-hud,
+body.block-editor-page #corepulse-floating-trigger,
+body.fl-builder-edit #corepulse-hud,
+body.fl-builder-edit #corepulse-floating-trigger {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    z-index: -9999 !important;
+}

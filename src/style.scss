@@ -1,0 +1,56 @@
+// CorePulse Variables
+$color-green: #00ff00;
+$color-yellow: #ffcc00;
+$color-red: #ff4444;
+$color-purple: #a155ff;
+$bg-dark: #1d2327;
+$bg-panel: #2c3338;
+$text-light: #f0f0f1;
+
+// Pulse Animation
+@keyframes pulse-animation {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.4); opacity: 0.6; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.pulse-icon {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    background: $color-green;
+    border-radius: 50%;
+    margin-right: 6px;
+    box-shadow: 0 0 5px $color-green;
+    animation: pulse-animation 1.5s infinite;
+    vertical-align: middle;
+
+    &.status-warning { background: $color-yellow; box-shadow: 0 0 10px $color-yellow; }
+    &.status-danger { background: $color-red; box-shadow: 0 0 10px $color-red; }
+    &.status-error { background: $color-purple; box-shadow: 0 0 10px $color-purple; }
+}
+
+// HUD Slide-out Panel
+#corepulse-hud {
+    position: fixed;
+    top: 0;
+    right: -350px;
+    width: 350px;
+    height: 100vh;
+    background: $bg-dark;
+    color: $text-light;
+    z-index: 999999;
+    box-shadow: -5px 0 20px rgba(0,0,0,0.5);
+    transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    &.corepulse-hud-active {
+        right: 0;
+    }
+
+    .corepulse-hud-header {
+        background: $bg-panel;
+        padding: 15px 20px;
+        display: flex;
+        justify-content: space-between;
+    }
+}
