@@ -33,5 +33,27 @@ Modern WordPress development has a hidden performance killer: **Monolithic Hydra
    * Click the green "CorePulse: Active" node in the top Admin Bar.
    * Use the keyboard shortcut: `Ctrl + Shift + X`.
 
+## Roadmap: The Future of the Engine
+
+CorePulse is built for the long haul. Here is what is currently being engineered for the next major releases:
+
+* **[v1.1.0] Headless Simulation Mode:** Preview the performance impact of dequeuing a script *before* applying the change globally.
+* **[v1.1.0] Asset Dependency Mapping:** Automatically detect if a script you are about to "Snipe" is a dependency for another active script.
+* **[v1.2.0] Historical Pulse Logs:** Store local snapshots of Web Vitals to see if your site performance is improving or degrading over time.
+* **[v1.2.0] Auto-Preconnect Engine:** Intelligently detect 3rd-party domains (Google Fonts, Analytics) and inject `preconnect` hints automatically.
 ---
 *Engineered by [Moses Ssebuwufu](https://github.com/ssebuwufumoses).*
+
+## ❓ Frequently Asked Questions
+
+**Q: Does CorePulse replace caching plugins like WP Rocket or LiteSpeed?**
+**A:** No. CorePulse is a *Performance Engine*, not a cache. While caching speeds up delivery, CorePulse reduces the actual work the browser has to do (Hydration/DOM size). They work perfectly together.
+
+**Q: Will the HUD be visible to my website visitors?**
+**A:** No. The Asset Autopsy HUD is strictly protected. It only renders for users with `manage_options` capabilities (Administrators) who are logged in.
+
+**Q: Can "Sniping" a script break my site?**
+**A:** Yes, if you dequeue a critical file. However, CorePulse includes an **Emergency Restore** feature. If a fatal JS error is detected after a change, a restore button will appear to let you instantly revert.
+
+**Q: Is there any impact on server resources?**
+**A:** Minimal. CorePulse is server-centric but uses very lightweight PHP logic to intercept the enqueue queue. Most of the "heavy lifting" for metrics happens in the user's browser via native APIs.
