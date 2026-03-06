@@ -46,19 +46,13 @@ CorePulse is built for the long haul. Here is what is currently being engineered
 
 **Q: Does CorePulse replace caching plugins like WP Rocket or LiteSpeed?** <br>
 **A:** No. CorePulse is a *Performance Engine*, not a cache. While caching speeds up delivery, CorePulse reduces the actual work the browser has to do (Hydration/DOM size). They work perfectly together.
-
 <br>
-
 **Q: Will the HUD be visible to my website visitors?** <br>
 **A:** No. The Asset Autopsy HUD is strictly protected. It only renders for users with `manage_options` capabilities (Administrators) who are logged in.
-
 <br>
-
 **Q: Can "Sniping" a script break my site?** <br>
 **A:** Yes, if you dequeue a critical file. However, CorePulse includes an **Emergency Restore** feature. If a fatal JS error is detected after a change, a restore button will appear to let you instantly revert.
-
 <br>
-
 **Q: Is there any impact on server resources?** <br>
 **A:** Minimal. CorePulse is server-centric but uses very lightweight PHP logic to intercept the enqueue queue. Most of the "heavy lifting" for metrics happens in the user's browser via native APIs.
 
