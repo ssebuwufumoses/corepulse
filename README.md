@@ -57,10 +57,10 @@ CorePulse is built for the long haul. Here is what is currently being engineered
 **Q: Can "Sniping" a script break my site?** <br>
 **A:** Yes, if you dequeue a critical file. However, CorePulse includes an **Emergency Restore** feature. If a fatal JS error is detected after a change, a restore button will appear to let you instantly revert.
 
----
-*Engineered by [Moses Ssebuwufu](https://github.com/ssebuwufumoses).*
-
 <br>
 
 **Q: Is there any impact on server resources?** <br>
 **A:** Minimal. CorePulse is server-centric but uses very lightweight PHP logic to intercept the enqueue queue. Most of the "heavy lifting" for metrics happens in the user's browser via native APIs.
+
+---
+*Engineered by [Moses Ssebuwufu](https://github.com/ssebuwufumoses).*
