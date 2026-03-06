@@ -27,4 +27,4 @@ CorePulse is built with a focus on modern WordPress development standards:
 3. Activate and navigate to the CorePulse settings to start optimizing.
 
 ---
-*Developed and maintained by [Moses Ssebuwufu](https://github.com/ssebuwufumoses) - Custom WordPress Themes, Plugins, and Full Site Editing (FSE).*
+*Developed and maintained by [Moses Ssebuwufu](https://github.com/ssebuwufumoses).*
