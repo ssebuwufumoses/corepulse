@@ -12,11 +12,28 @@ class CorePulse_Kill_Switch {
         add_action( 'wp_ajax_corepulse_toggle_script', array( $this, 'toggle_script' ) );
         add_action( 'wp_ajax_corepulse_emergency_restore', array( $this, 'emergency_restore' ) ); 
         add_action( 'wp_ajax_corepulse_import_rules', array( $this, 'import_rules' ) );
-        add_action( 'wp_ajax_corepulse_toggle_preload', array( $this, 'toggle_preload' ) ); // NEW
+        add_action( 'wp_ajax_corepulse_toggle_preload', array( $this, 'toggle_preload' ) );
     }
 
     public function execute_kill_list() {
         if ( is_admin() ) return;
+
+        // v1.1.0: Headless Simulation Interceptor
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        $is_simulating = isset( $_GET['cp_simulate'] ) && $_GET['cp_simulate'] === 'true';
+        
+        if ( $is_simulating && current_user_can( 'manage_options' ) ) {
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+            if ( ! empty( $_GET['cp_target'] ) ) {
+                // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+                $targets = explode( ',', sanitize_text_field( wp_unslash( $_GET['cp_target'] ) ) );
+                foreach ( $targets as $handle ) {
+                    $handle = trim( $handle );
+                    wp_dequeue_script( $handle ); wp_deregister_script( $handle );
+                    wp_dequeue_style( $handle ); wp_deregister_style( $handle );
+                }
+            }
+        }
 
         $killed_scripts = get_option( 'corepulse_killed_scripts', array() );
         $current_id = get_queried_object_id();
@@ -99,7 +116,6 @@ class CorePulse_Kill_Switch {
         wp_send_json_error( 'Invalid JSON format.' );
     }
 
-    // Boost Engine - Saves assets to be preloaded in the head
     public function toggle_preload() {
         check_ajax_referer( 'corepulse_nonce', 'security' );
         if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( 'Unauthorized' );

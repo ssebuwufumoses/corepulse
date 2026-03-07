@@ -78,7 +78,7 @@
 /* Stat Grid UI */
 .corepulse-stat-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr); /* Updated to 3 columns */
+    grid-template-columns: repeat(3, 1fr);
     gap: 12px;
     margin-bottom: 25px;
 }
@@ -418,4 +418,78 @@ body.fl-builder-edit #corepulse-floating-trigger {
     opacity: 0 !important;
     pointer-events: none !important;
     z-index: -9999 !important;
+}
+
+/* --- Sandbox Control Bar --- */
+.corepulse-sandbox-bar {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid #3c434a;
+    border-radius: 6px;
+    padding: 10px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.corepulse-sandbox-desc {
+    font-size: 10px;
+    color: #a7aaad;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.corepulse-sim-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #a7aaad;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    transition: color 0.3s ease;
+}
+
+.corepulse-switch {
+    position: relative;
+    display: inline-block;
+    width: 32px; 
+    height: 18px;
+}
+
+.corepulse-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.corepulse-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #3c434a;
+    transition: .3s;
+    border-radius: 18px;
+}
+
+.corepulse-slider:before {
+    position: absolute;
+    content: "";
+    height: 12px;
+    width: 12px;
+    left: 3px;
+    bottom: 3px;
+    background-color: #a7aaad;
+    transition: .3s;
+    border-radius: 50%;
+}
+
+.corepulse-switch input:checked + .corepulse-slider {
+    background-color: rgba(0, 255, 0, 0.15);
+    border: 1px solid #00ff00;
+}
+
+.corepulse-switch input:checked + .corepulse-slider:before {
+    transform: translateX(14px);
+    background-color: #00ff00;
+    box-shadow: 0 0 5px #00ff00;
 }

@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: CorePulse
- * Plugin URI: https://ssebuwufu.com
+ * Plugin URI: https://github.com/ssebuwufumoses/corepulse
  * Description: Real-time Hydration & Performance Monitoring. Shift the load back to the server.
  * Version: 1.0.0
  * Author: Ssebuwufu Moses

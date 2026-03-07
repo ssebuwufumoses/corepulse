@@ -11,30 +11,22 @@ class CorePulse_Admin_Bar {
     public function add_pulse_node( $wp_admin_bar ) {
         if ( ! current_user_can( 'manage_options' ) ) return;
 
-        // ID so JS can find the dot, and forced it to start green.
         $icon = '<span id="corepulse-icon" class="pulse-icon" style="margin-top: 6px; background: #00ff00; box-shadow: 0 0 5px #00ff00;"></span>';
 
         if ( is_admin() ) {
-            // BackEnd: Plugin is alive, links directly to the Settings page
             $wp_admin_bar->add_node( array(
                 'id'    => 'corepulse-status',
-                // Change to "Active" and updated the hex color to pure green
                 'title' => $icon . ' CorePulse: <span style="color:#00ff00;">Active</span>',
                 'href'  => admin_url( 'options-general.php?page=corepulse' ), 
-                'meta'  => array( 
-                    'title' => 'Go to CorePulse Settings' 
-                )
+                'meta'  => array( 'title' => 'Go to CorePulse Settings' )
             ) );
         } else {
-            // FrontEnd: Plugin is hunting, links to the HUD
             $wp_admin_bar->add_node( array(
                 'id'    => 'corepulse-status',
-                // Force text to start green so it doesn't flash white!
                 'title' => $icon . ' CorePulse: <span id="pulse-score" style="color:#00ff00;">Scanning...</span>',
                 'href'  => '#',
                 'meta'  => array( 
-                    'title' => 'Open Asset Autopsy HUD',
-                    // Bulletproof fallback to force open the HUD on click
+                    'title'   => 'Open Asset Autopsy HUD',
                     'onclick' => 'const hud = document.getElementById("corepulse-hud"); if(hud) hud.classList.add("corepulse-hud-active"); return false;'
                 )
             ) );

@@ -12,12 +12,27 @@
             </svg>
             Asset Autopsy
         </h3>
+        
         <div class="corepulse-io-tools">
             <button id="corepulse-export-btn" title="Export Sniper Rules"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>
             <label for="corepulse-import-file" id="corepulse-import-btn" title="Import Sniper Rules"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg></label>
             <input type="file" id="corepulse-import-file" accept=".json" style="display: none;">
             <button id="corepulse-hud-close">&times;</button>
         </div>
+    </div>
+
+    <div class="corepulse-sandbox-bar">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <label class="corepulse-switch">
+                <input type="checkbox" id="corepulse-sim-toggle" <?php 
+                    // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+                    echo (isset($_GET['cp_simulate']) && $_GET['cp_simulate'] === 'true') ? 'checked' : ''; 
+                ?>>
+                <span class="corepulse-slider"></span>
+            </label>
+            <span class="corepulse-sim-label" id="corepulse-sim-label">SIM: OFF</span>
+        </div>
+        <span class="corepulse-sandbox-desc">Dry Run Mode</span>
     </div>
     
     <div class="corepulse-hud-body">

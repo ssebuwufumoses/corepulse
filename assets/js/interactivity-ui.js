@@ -3,6 +3,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const iconElement = document.getElementById('corepulse-icon');
     let currentSniperTarget = '';
 
+    // v1.1.0: Inject simulated targets into the HUD state
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('cp_simulate') === 'true' && urlParams.get('cp_target')) {
+        const simulatedTargets = urlParams.get('cp_target').split(',');
+        window.corepulse_ajax = window.corepulse_ajax || { killed: {} };
+        simulatedTargets.forEach(target => {
+            window.corepulse_ajax.killed[target] = { rule: 'Simulated (Dry Run)', locations: [] };
+        });
+    }
+
     window.addEventListener('error', function(event) {
         let hasKilledScripts = window.corepulse_ajax && window.corepulse_ajax.killed && Object.keys(window.corepulse_ajax.killed).length > 0;
         if (hasKilledScripts) {
@@ -99,9 +109,9 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) { } 
     }
 
-    // NEW: Complete Web Vitals (TTFB, INP, CLS)
+    // Complete Web Vitals (TTFB, INP, CLS)
     function trackWebVitals() {
-        // 1. TTFB (Time to First Byte)
+        // TTFB (Time to First Byte)
         const navEntry = performance.getEntriesByType('navigation')[0];
         const ttfbElement = document.getElementById('corepulse-hud-ttfb');
         if (navEntry && ttfbElement) {
@@ -112,7 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
             else ttfbElement.style.color = '#00ff00';
         }
 
-        // 2. INP (Interaction to Next Paint)
+        // INP (Interaction to Next Paint)
         const inpElement = document.getElementById('corepulse-hud-inp');
         if (inpElement) {
             function updateInpUI(delay) {
@@ -140,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }, { passive: true });
         }
 
-        // 3. CLS (Cumulative Layout Shift)
+        // CLS (Cumulative Layout Shift)
         let clsValue = 0;
         const clsElement = document.getElementById('corepulse-hud-cls');
         if (clsElement) {
@@ -344,7 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 hudGraveyardList.innerHTML = '';
                 killedHandles.forEach(handle => {
                     const ruleData = killedData[handle];
-                    const ruleText = ruleData.rule === 'everywhere' ? 'Global Block' : (ruleData.rule === 'only' ? 'Blocked on this page' : 'Blocked on other pages');
+                    const ruleText = ruleData.rule === 'everywhere' ? 'Global Block' : (ruleData.rule === 'only' ? 'Blocked on this page' : (ruleData.rule === 'Simulated (Dry Run)' ? 'Simulated (Dry Run)' : 'Blocked on other pages'));
                     const li = document.createElement('li');
                     li.style.display = 'flex'; li.style.justifyContent = 'space-between'; li.style.alignItems = 'center';
                     li.innerHTML = `
@@ -380,14 +390,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const sniperModal = document.getElementById('corepulse-sniper-modal');
 
         if (adminBtn || floatBtn) {
-            // Only intercept the click if the HUD actually exists on the page
             if (hud) {
-                e.preventDefault(); // Stop the link
-                hud.classList.add('corepulse-hud-active'); // Open the HUD
+                e.preventDefault(); 
+                hud.classList.add('corepulse-hud-active'); 
                 populateHUD();
             }
-            // If 'hud' doesn't exist (because we are in the backend Dashboard), 
-            // the JS will do nothing and allow the normal href link to work!
         }
         
         if (closeBtn && hud) {
@@ -395,7 +402,6 @@ document.addEventListener('DOMContentLoaded', () => {
             hud.classList.remove('corepulse-hud-active');
         }
 
-        // Handle Preload Toggle
         if (boostBtn) {
             e.preventDefault();
             const url = boostBtn.getAttribute('data-url');
@@ -482,6 +488,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const rule = sniperBtn.getAttribute('data-rule');
             sniperBtn.innerText = 'Targeting...';
 
+            // v1.1.0: Intercept for Simulation Mode
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('cp_simulate') === 'true') {
+                let currentTargets = urlParams.get('cp_target') ? urlParams.get('cp_target').split(',') : [];
+                if (!currentTargets.includes(currentSniperTarget)) currentTargets.push(currentSniperTarget);
+                urlParams.set('cp_target', currentTargets.join(','));
+                sessionStorage.setItem('corepulse_hud_open', 'true');
+                window.location.search = urlParams.toString();
+                return; 
+            }
+
             const formData = new URLSearchParams();
             formData.append('action', 'corepulse_toggle_script');
             formData.append('handle', currentSniperTarget);
@@ -506,6 +523,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const handle = reviveBtn.getAttribute('data-handle');
             reviveBtn.innerText = '...';
             reviveBtn.style.opacity = '0.5';
+
+            // v1.1.0: Intercept for Simulation Mode
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('cp_simulate') === 'true') {
+                let currentTargets = urlParams.get('cp_target') ? urlParams.get('cp_target').split(',') : [];
+                currentTargets = currentTargets.filter(t => t !== handle);
+                if (currentTargets.length > 0) urlParams.set('cp_target', currentTargets.join(','));
+                else urlParams.delete('cp_target');
+                sessionStorage.setItem('corepulse_hud_open', 'true');
+                window.location.search = urlParams.toString();
+                return;
+            }
 
             const formData = new URLSearchParams();
             formData.append('action', 'corepulse_toggle_script');
@@ -607,6 +636,30 @@ document.addEventListener('DOMContentLoaded', () => {
         updateUI(window.corePulseData.weight, window.corePulseData.css_weight, hasError);
         scanDOMDepth(); 
         scanWCAG();
-        trackWebVitals(); // Triggers TTFB, INP, and CLS
+        trackWebVitals();
+    }
+    
+    // v1.1.0: Handle the HUD Toggle Switch
+    const simToggle = document.getElementById('corepulse-sim-toggle');
+    const simLabel = document.getElementById('corepulse-sim-label');
+    
+    if (simToggle) {
+        // Highlight label if active on load
+        if (simToggle.checked && simLabel) {
+            simLabel.style.color = '#00ff00';
+            simLabel.innerText = 'SIM: ON';
+        }
+
+        simToggle.addEventListener('change', (e) => {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (e.target.checked) {
+                urlParams.set('cp_simulate', 'true');
+            } else {
+                urlParams.delete('cp_simulate');
+                urlParams.delete('cp_target'); // Clear targets when turning off
+            }
+            sessionStorage.setItem('corepulse_hud_open', 'true');
+            window.location.search = urlParams.toString(); // Reloads page
+        });
     }
 });
