@@ -1,4 +1,4 @@
-# ⚡ CorePulse (v1.0.0)
+# ⚡ CorePulse
 
 ![Version](https://img.shields.io/badge/Version-1.0.0-00d2ff.svg)
 ![WordPress](https://img.shields.io/badge/WordPress-6.0+-0073aa.svg)
