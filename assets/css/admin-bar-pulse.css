@@ -73,6 +73,14 @@
     font-size: 1.75rem;
     cursor: pointer;
     line-height: 1;
+    border-radius: 4px;
+}
+
+#corepulse-hud-close:hover,
+#corepulse-hud-close:focus-visible {
+    background: rgba(255, 68, 68, 0.1);
+    outline: 2px solid #ff4444;
+    outline-offset: 2px;
 }
 
 /* Stat Grid UI */
@@ -115,6 +123,51 @@
 
 #corepulse-hud-inp, #corepulse-hud-ttfb, #corepulse-hud-cls {
     color: #a7aaad;
+}
+
+/* --- v1.1.0: Fatal Error Alert Box --- */
+.corepulse-fatal-error {
+    background: rgba(255, 68, 68, 0.08);
+    border: 1px solid rgba(255, 68, 68, 0.2);
+    border-left: 3px solid #ff4444;
+    padding: 15px;
+    border-radius: 6px;
+    margin-top: 15px;
+    margin-bottom: 25px;
+}
+
+#corepulse-hud .corepulse-fatal-error h4 {
+    font-size: 0.875rem !important;
+    font-weight: 700 !important;
+    color: #ff4444 !important;
+    text-transform: uppercase !important;
+    margin: 0 0 10px 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    line-height: 1.2 !important;
+    font-family: 'Questrial', sans-serif !important;
+    letter-spacing: 1px !important;
+}
+
+#corepulse-hud .corepulse-fatal-error h4 svg {
+    margin-right: 8px !important;
+}
+
+#corepulse-emergency-restore-btn {
+    padding: 10px !important;
+    font-size: 11px !important;
+    border-radius: 4px !important;
+    font-weight: bold !important;
+    letter-spacing: 0.5px !important;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#corepulse-emergency-restore-btn:hover,
+#corepulse-emergency-restore-btn:focus-visible {
+    background-color: #cc0000 !important;
+    outline: 2px solid #ff4444;
+    outline-offset: 2px;
 }
 
 /* Issues & Errors Lists */
@@ -180,9 +233,12 @@
     border: 1px solid rgba(255, 68, 68, 0.3) !important;
 }
 
-.corepulse-btn-kill:hover {
+.corepulse-btn-kill:hover,
+.corepulse-btn-kill:focus-visible {
     background-color: #ff4444 !important;
     color: #fff !important;
+    outline: 2px solid #ff4444 !important;
+    outline-offset: 2px !important;
 }
 
 /* Boost Button */
@@ -193,10 +249,13 @@
     margin-right: 5px !important;
 }
 
-.corepulse-btn-boost:hover {
+.corepulse-btn-boost:hover,
+.corepulse-btn-boost:focus-visible {
     background-color: rgba(0, 210, 255, 0.25) !important;
     color: #00d2ff !important;
     border-color: #00d2ff !important;
+    outline: 2px solid #00d2ff !important;
+    outline-offset: 2px !important;
 }
 
 .corepulse-btn-boost.active {
@@ -213,9 +272,12 @@
     border: 1px solid rgba(0, 255, 0, 0.3) !important;
 }
 
-.corepulse-btn-revive:hover {
+.corepulse-btn-revive:hover,
+.corepulse-btn-revive:focus-visible {
     background-color: #00ff00 !important;
     color: #000 !important;
+    outline: 2px solid #00ff00 !important;
+    outline-offset: 2px !important;
 }
 
 /* Sniper Engine UI */
@@ -252,21 +314,26 @@
 .corepulse-sniper-btn {
     display: block;
     width: 100%;
-    padding: 12px;
+    padding: 10px 15px; 
     margin-bottom: 10px;
     background: #2c3338;
     color: #f0f0f1;
     border: 1px solid #3c434a;
     border-radius: 4px;
     cursor: pointer;
-    font-weight: 600;
+    font-size: 12px !important; 
+    font-weight: 500 !important; 
+    letter-spacing: 0.5px;
     transition: all 0.2s ease;
 }
 
-.corepulse-sniper-btn:hover {
+.corepulse-sniper-btn:hover,
+.corepulse-sniper-btn:focus-visible {
     background: #ff4444;
     color: #fff;
     border-color: #ff4444;
+    outline: 2px solid #ff4444;
+    outline-offset: 2px;
 }
 
 #corepulse-sniper-cancel {
@@ -277,10 +344,15 @@
     font-size: 0.75rem;
     margin-top: 10px;
     text-decoration: underline;
+    padding: 4px 8px;
+    border-radius: 4px;
 }
 
-#corepulse-sniper-cancel:hover {
+#corepulse-sniper-cancel:hover,
+#corepulse-sniper-cancel:focus-visible {
     color: #fff;
+    outline: 2px solid #a7aaad;
+    outline-offset: 2px;
 }
 
 /* Mobile Responsiveness */
@@ -326,9 +398,12 @@
     transition: all 0.2s ease;
 }
 
-.corepulse-wcag-trace-btn:hover {
+.corepulse-wcag-trace-btn:hover,
+.corepulse-wcag-trace-btn:focus-visible {
     background: #00d2ff;
     color: #1d2327;
+    outline: 2px solid #00d2ff;
+    outline-offset: 2px;
 }
 
 .corepulse-size-badge {
@@ -366,9 +441,12 @@
     transition: all 0.2s;
 }
 
-#corepulse-export-btn:hover, #corepulse-import-btn:hover {
+#corepulse-export-btn:hover, #corepulse-import-btn:hover,
+#corepulse-export-btn:focus-visible, #corepulse-import-btn:focus-visible {
     color: #fff;
     border-color: #00ff00;
+    outline: 2px solid #00ff00;
+    outline-offset: 2px;
 }
 
 /* Floating Node Trigger */
@@ -390,9 +468,12 @@
     transition: all 0.2s ease;
 }
 
-#corepulse-floating-trigger:hover {
+#corepulse-floating-trigger:hover,
+#corepulse-floating-trigger:focus-visible {
     border-color: #00ff00;
     transform: scale(1.1);
+    outline: 2px solid #00ff00;
+    outline-offset: 3px;
 }
 
 @media (max-width: 400px) {
@@ -492,4 +573,38 @@ body.fl-builder-edit #corepulse-floating-trigger {
     transform: translateX(14px);
     background-color: #00ff00;
     box-shadow: 0 0 5px #00ff00;
+}
+
+/* Accessibility for the Toggle Switch */
+.corepulse-switch input:focus-visible + .corepulse-slider {
+    outline: 2px solid #00ff00;
+    outline-offset: 2px;
+}
+
+/* Active Performance Budget Alerts */
+#corepulse-floating-trigger.corepulse-status-danger {
+    border-color: #ff4444;
+    animation: trigger-pulse-danger 1.5s infinite;
+}
+
+#corepulse-floating-trigger.corepulse-status-warning {
+    border-color: #ffcc00;
+    box-shadow: 0 0 15px rgba(255, 204, 0, 0.4);
+}
+
+#corepulse-floating-trigger.corepulse-status-error {
+    border-color: #a155ff;
+    animation: trigger-pulse-error 1.5s infinite;
+}
+
+@keyframes trigger-pulse-danger {
+    0% { box-shadow: 0 0 10px rgba(255, 68, 68, 0.5); }
+    50% { box-shadow: 0 0 25px rgba(255, 68, 68, 1); }
+    100% { box-shadow: 0 0 10px rgba(255, 68, 68, 0.5); }
+}
+
+@keyframes trigger-pulse-error {
+    0% { box-shadow: 0 0 10px rgba(161, 85, 255, 0.5); }
+    50% { box-shadow: 0 0 25px rgba(161, 85, 255, 1); }
+    100% { box-shadow: 0 0 10px rgba(161, 85, 255, 0.5); }
 }

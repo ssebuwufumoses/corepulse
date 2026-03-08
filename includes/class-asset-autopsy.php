@@ -19,7 +19,6 @@ class CorePulse_Asset_Autopsy {
             if ( $type === 'js' ) $as = 'script';
             if ( $type === 'font' ) $as = 'font';
 
-            // Escape output compliance. Using strict string literals instead of dynamic variables.
             if ( $as === 'font' ) {
                 echo "<link rel='preload' href='" . esc_url( $url ) . "' as='" . esc_attr( $as ) . "' crossorigin='anonymous'>\n";
             } else {
@@ -31,16 +30,13 @@ class CorePulse_Asset_Autopsy {
 
     public function calculate_payload_weights() {
         if ( ! current_user_can( 'manage_options' ) ) return;
-
-        // Do not load the HUD inside page builders, editors, or backend
         if ( is_admin() ) return; 
         
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Reading URL params for display logic only, not processing forms.
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         if ( isset( $_GET['elementor-preview'] ) || ( isset( $_GET['action'] ) && $_GET['action'] == 'elementor' ) ) return;
-        
         if ( function_exists( 'is_customize_preview' ) && is_customize_preview() ) return;
         
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Reading URL params for display logic only, not processing forms.
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         if ( isset( $_GET['fl_builder'] ) || isset( $_GET['et_fb'] ) || isset( $_GET['bricks'] ) || isset( $_GET['oxygen_iframe'] ) ) return;
 
         global $wp_scripts, $wp_styles;
@@ -48,14 +44,34 @@ class CorePulse_Asset_Autopsy {
         $total_css_size = 0;
         $culprits = array();
 
+        // v1.1.0: Asset Dependency Reverse Mapping Arrays
+        $js_dependents = array();
+        $css_dependents = array();
+
         if ( isset( $wp_scripts ) ) {
             $all_scripts = array_unique( array_merge( (array) $wp_scripts->queue, (array) $wp_scripts->done ) );
+            
+            // First Pass: Map out which active scripts rely on which handles
+            foreach ( $all_scripts as $handle ) {
+                if ( isset( $wp_scripts->registered[$handle] ) ) {
+                    $deps = $wp_scripts->registered[$handle]->deps;
+                    if ( ! empty( $deps ) && is_array( $deps ) ) {
+                        foreach ( $deps as $dep ) {
+                            if ( ! isset( $js_dependents[$dep] ) ) $js_dependents[$dep] = array();
+                            $js_dependents[$dep][] = $handle;
+                        }
+                    }
+                }
+            }
+
+            // Second Pass: Build the Culprit Payload
             foreach ( $all_scripts as $handle ) {
                 if ( strpos( $handle, 'corepulse' ) !== false ) continue;
 
                 $src = isset( $wp_scripts->registered[$handle] ) ? $wp_scripts->registered[$handle]->src : '';
                 $size_info = $this->get_file_size_info( $src );
                 $suggestion = 'Custom or 3rd-party script.';
+                $dependents = isset( $js_dependents[$handle] ) ? array_unique( $js_dependents[$handle] ) : array();
                 
                 $culprits[] = array( 
                     'handle'     => $handle, 
@@ -65,7 +81,8 @@ class CorePulse_Asset_Autopsy {
                     'size'       => $size_info['display'],
                     'bytes'      => $size_info['bytes'],
                     'domain'     => $size_info['domain'],
-                    'provider'   => $this->get_provider( $src ) 
+                    'provider'   => $this->get_provider( $src ),
+                    'dependents' => $dependents 
                 );
                 $total_js_size += ( $size_info['bytes'] / 1024 ); 
             }
@@ -73,11 +90,26 @@ class CorePulse_Asset_Autopsy {
 
         if ( isset( $wp_styles ) ) {
             $all_styles = array_unique( array_merge( (array) $wp_styles->queue, (array) $wp_styles->done ) );
+            
+            // First Pass: Map CSS dependencies
+            foreach ( $all_styles as $handle ) {
+                if ( isset( $wp_styles->registered[$handle] ) ) {
+                    $deps = $wp_styles->registered[$handle]->deps;
+                    if ( ! empty( $deps ) && is_array( $deps ) ) {
+                        foreach ( $deps as $dep ) {
+                            if ( ! isset( $css_dependents[$dep] ) ) $css_dependents[$dep] = array();
+                            $css_dependents[$dep][] = $handle;
+                        }
+                    }
+                }
+            }
+
             foreach ( $all_styles as $handle ) {
                 if ( strpos( $handle, 'corepulse' ) !== false ) continue;
 
                 $src = isset( $wp_styles->registered[$handle] ) ? $wp_styles->registered[$handle]->src : '';
                 $size_info = $this->get_file_size_info( $src );
+                $dependents = isset( $css_dependents[$handle] ) ? array_unique( $css_dependents[$handle] ) : array();
                 
                 $suggestion = 'Heavy stylesheet. Dequeue on pages where this design is not needed.';
                 if ( strpos( $handle, 'elementor' ) !== false ) $suggestion = 'Elementor builder CSS. Often loads globally even when unused.';
@@ -90,7 +122,8 @@ class CorePulse_Asset_Autopsy {
                     'size'       => $size_info['display'],
                     'bytes'      => $size_info['bytes'],
                     'domain'     => $size_info['domain'],
-                    'provider'   => $this->get_provider( $src ) 
+                    'provider'   => $this->get_provider( $src ),
+                    'dependents' => $dependents
                 );
                 $total_css_size += ( $size_info['bytes'] / 1024 ); 
             }

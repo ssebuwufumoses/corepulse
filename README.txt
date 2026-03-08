@@ -1,9 +1,9 @@
 === CorePulse ===
 Contributors: ssebuwufumoses
 Tags: performance, core web vitals, speed, accessibility, optimization
-Requires at least: 6.0
+Requires at least: 5.8
 Tested up to: 6.9
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -25,12 +25,17 @@ CorePulse is built on a **Server-Centric Performance Model**. It intervenes at t
 
 * **The Asset Autopsy (HUD):** A sleek, dark-mode slide-out dashboard detailing the exact monolithic libraries loading on the current page. It combines data from PHP and the browser's Performance API to track live TTFB (Time to First Byte), INP Delay (Interaction to Next Paint), and CLS (Cumulative Layout Shift).
 * **The Sniper Engine (Kill Switch):** Conditionally dequeue scripts and stylesheets without writing a single line of PHP. Kill a script globally, kill it on a single page, or kill it everywhere *except* a specific page.
+* **Headless Simulation Mode (Dry Run):** Safely preview the performance impact of unloading a script before applying the change globally to the live frontend.
+* **Asset Dependency Mapping:** Actively maps the WordPress dependency tree and warns you with a "Foundational Asset" tag before you kill scripts that other active assets rely on.
+* **Auto-Preconnect Engine:** Automatically detects 3rd-party domains (Google Fonts, Analytics) queued on the page and intelligently injects `<link rel="preconnect">` and `<link rel="dns-prefetch">` hints to accelerate DNS resolution.
+* **Historical Pulse Logs:** A local, auto-cleaning database that captures daily snapshots of your Web Vitals (TTFB, INP, CLS) and payload weights so you can track performance trends over time.
 * **The Boost Engine:** Accelerate your Critical Rendering Path. Click "BOOST" on any heavy hero image, critical CSS, or primary font, and CorePulse will dynamically inject `<link rel="preload">` tags to the very top of your document.
 * **The DOM Depth Scanner:** Excessive DOM nodes crush mobile CPU performance. This heuristic scanner continuously counts every single HTML node rendered on the page, warning you when page builders generate excess "div soup".
 * **The WCAG Accessibility Guard:** A zero-dependency JavaScript engine that instantly audits the rendered DOM for structural accessibility failures (missing `alt` tags, unlabelled inputs). Clicking "TRACE" will scroll the page to the exact violating element and highlight it.
 
 ### Enterprise Safety Features
 
+* **Active Budget Alerts:** The HUD trigger node actively pulses yellow (Warning) or red (Danger) the moment your page payload crosses your defined server-centric thresholds.
 * **Emergency Restore Safety Net:** Aggressively dequeuing JavaScript can sometimes break a page. CorePulse injects a lightweight `window.onerror` trap. If you forcefully dequeue a load-bearing script that completely crashes the page layout, the Admin Bar will violently flash red and drop an "Emergency Restore" button into your UI to instantly revive all killed scripts and reload the page.
 * **Builder-Agnostic Isolation:** To prevent the HUD from ruining your editing canvas or reporting artificially inflated DOM sizes, CorePulse automatically detects when you are actively designing in Elementor, Divi, Beaver Builder, Oxygen, Bricks, or Gutenberg. It silently hides its UI to protect your workflow.
 
@@ -81,6 +86,17 @@ Absolutely not. CorePulse explicitly checks for Administrator privileges before 
 
 == Changelog ==
 
+= 1.1.0 =
+* **New:** Headless Simulation Mode - Test script unloading safely without breaking the live frontend.
+* **New:** Asset Dependency Mapping - Intelligent warnings alert you before killing foundational scripts.
+* **New:** Auto-Preconnect Engine - Automatically injects DNS resource hints for 3rd-party domains.
+* **New:** Historical Pulse Logs - Local database logging Web Vitals (TTFB, INP, CLS) to track performance over time.
+* **New:** Active Budget Alerts - The floating trigger now pulses yellow/red when page weight exceeds defined thresholds.
+* **Fix:** Resolved an issue where custom performance thresholds in the settings page would not save properly due to un-whitelisted API options.
+* **Fix:** Resolved a JavaScript race condition syncing simulated vs. real graveyard states.
+* **Tweak:** Engineered fully WCAG-compliant focus states for all HUD interactive elements.
+* **Security:** Hardened dashboard database outputs to strict WordPress VIP escaping standards.
+
 = 1.0.0 =
 * Initial Enterprise Release: Welcome to CorePulse!
 * Engineered the Asset Autopsy HUD with real-time DOM & payload scanning.
@@ -93,6 +109,9 @@ Absolutely not. CorePulse explicitly checks for Administrator privileges before 
 * Added the Emergency Restore Safety Net (window.onerror trap) to protect developers from fatal JS crashes.
 
 == Upgrade Notice ==
+
+= 1.1.0 =
+This is a massive engine upgrade. CorePulse v1.1.0 introduces Headless Simulation Mode, Asset Dependency Mapping, Auto-Preconnect logic, and Historical Performance Logging. Update now to unlock active performance monitoring.
 
 = 1.0.0 =
 Welcome to CorePulse Version 1.0! Shift the load back to the server and take control of your Core Web Vitals today.

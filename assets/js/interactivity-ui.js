@@ -3,13 +3,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const iconElement = document.getElementById('corepulse-icon');
     let currentSniperTarget = '';
 
-    // v1.1.0: Inject simulated targets into the HUD state
+    // Ensure the 'killed' data is an object BEFORE injecting simulation data
+    if (window.corepulse_ajax && Array.isArray(window.corepulse_ajax.killed)) {
+        window.corepulse_ajax.killed = {};
+    }
+
+    // Inject simulated targets into the HUD state
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('cp_simulate') === 'true' && urlParams.get('cp_target')) {
         const simulatedTargets = urlParams.get('cp_target').split(',');
         window.corepulse_ajax = window.corepulse_ajax || { killed: {} };
         simulatedTargets.forEach(target => {
-            window.corepulse_ajax.killed[target] = { rule: 'Simulated (Dry Run)', locations: [] };
+            if (target.trim() !== '') {
+                window.corepulse_ajax.killed[target] = { rule: 'Simulated (Dry Run)', locations: [] };
+            }
         });
     }
 
@@ -109,9 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) { } 
     }
 
-    // Complete Web Vitals (TTFB, INP, CLS)
     function trackWebVitals() {
-        // TTFB (Time to First Byte)
         const navEntry = performance.getEntriesByType('navigation')[0];
         const ttfbElement = document.getElementById('corepulse-hud-ttfb');
         if (navEntry && ttfbElement) {
@@ -122,7 +127,6 @@ document.addEventListener('DOMContentLoaded', () => {
             else ttfbElement.style.color = '#00ff00';
         }
 
-        // INP (Interaction to Next Paint)
         const inpElement = document.getElementById('corepulse-hud-inp');
         if (inpElement) {
             function updateInpUI(delay) {
@@ -150,7 +154,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }, { passive: true });
         }
 
-        // CLS (Cumulative Layout Shift)
         let clsValue = 0;
         const clsElement = document.getElementById('corepulse-hud-cls');
         if (clsElement) {
@@ -208,7 +211,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 else if(filename.match(/\.(mp4|webm|avi)$/i)) displayType = 'VIDEO';
                 else if(displayType === 'CSS' || displayType === 'XMLHTTPREQUEST') displayType = 'MEDIA';
 
-                // Boost Button Logic
                 const isPreloaded = preloads.hasOwnProperty(item.url);
                 let btnHtml = '';
                 if (actualType === 'font' || actualType === 'image') {
@@ -240,6 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateUI(weight, cssWeight, hasHydrationError) {
         if (!scoreElement || !iconElement || !window.corePulseData) return;
         const settings = window.corePulseData.settings;
+        const floatNode = document.getElementById('corepulse-floating-trigger');
 
         scoreElement.innerText = weight + ' KB';
         const hudWeight = document.getElementById('corepulse-hud-weight');
@@ -248,16 +251,25 @@ document.addEventListener('DOMContentLoaded', () => {
         if (hudWeight) hudWeight.innerText = weight + ' KB';
         if (hudCssWeight) hudCssWeight.innerText = cssWeight + ' KB';
 
+        // Clear existing status classes on the floating node
+        if (floatNode) {
+            floatNode.classList.remove('corepulse-status-error', 'corepulse-status-danger', 'corepulse-status-warning');
+        }
+
+        // Apply visual budget alerts
         if (hasHydrationError) {
             scoreElement.innerText += ' (Error)';
             scoreElement.style.color = '#a155ff'; 
             iconElement.style.background = '#a155ff'; 
-        } else if (weight > settings.js_danger) {
+            if (floatNode) floatNode.classList.add('corepulse-status-error');
+        } else if (weight > settings.js_danger || cssWeight > settings.css_danger) {
             scoreElement.style.color = '#ff4444'; 
             iconElement.style.background = '#ff4444';
-        } else if (weight > settings.js_warning) {
+            if (floatNode) floatNode.classList.add('corepulse-status-danger');
+        } else if (weight > settings.js_warning || cssWeight > settings.css_warning) {
             scoreElement.style.color = '#ffcc00'; 
             iconElement.style.background = '#ffcc00';
+            if (floatNode) floatNode.classList.add('corepulse-status-warning');
         } else {
             scoreElement.style.color = '#00ff00'; 
         }
@@ -276,8 +288,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const hudGraveyardContainer = document.getElementById('corepulse-hud-graveyard-container');
         const hudGraveyardList = document.getElementById('corepulse-hud-graveyard');
 
-        if (window.corepulse_ajax && Array.isArray(window.corepulse_ajax.killed)) window.corepulse_ajax.killed = {};
-        
         const killedData = window.corepulse_ajax ? window.corepulse_ajax.killed : {};
         const killedHandles = Object.keys(killedData);
 
@@ -294,7 +304,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     const nameColor = culprit.type === 'css' ? '#00d2ff' : '#f0f0f1';
                     const providerHtml = culprit.provider ? `<span style="font-size: 9px; color: #a155ff; display: block; margin-top: 2px;">${culprit.provider}</span>` : '';
                     
-                    // Boost Button logic
                     const isPreloaded = preloads.hasOwnProperty(culprit.url);
                     let btnHtml = '';
                     if (culprit.url && culprit.url !== '') {
@@ -303,18 +312,28 @@ document.addEventListener('DOMContentLoaded', () => {
                         btnHtml = `<button class="corepulse-kill-toggle ${btnClass}" data-url="${culprit.url}" data-type="${culprit.type}">${btnText}</button>`;
                     }
 
+                    const deps = culprit.dependents || [];
+                    let depsHtml = '';
+                    let depsData = '';
+                    if (deps.length > 0) {
+                        const alertSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ff4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-top: -2px; margin-right: 3px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`;
+                        depsHtml = `<span class="corepulse-size-badge" style="color:#ff4444; border-color:rgba(255,68,68,0.3);" title="Required by: ${deps.join(', ')}">${alertSvg}${deps.length} Deps</span>`;
+                        depsData = deps.join(',');
+                    }
+
                     const li = document.createElement('li');
                     li.style.display = 'flex'; li.style.justifyContent = 'space-between'; li.style.alignItems = 'center';
                     li.innerHTML = `
                         <div>
                             <strong style="color: ${nameColor};">${culprit.handle}${ext}</strong>
                             <span class="corepulse-size-badge">${culprit.size}</span>
+                            ${depsHtml}
                             ${providerHtml}
                             <span style="font-size: 11px; color: #a7aaad; display:block; margin-top:2px;">${culprit.suggestion}</span>
                         </div>
                         <div style="display:flex; flex-shrink:0;">
                             ${btnHtml}
-                            <button class="corepulse-kill-toggle corepulse-btn-kill" data-handle="${culprit.handle}">Kill</button>
+                            <button class="corepulse-kill-toggle corepulse-btn-kill" data-handle="${culprit.handle}" data-dependents="${depsData}">Kill</button>
                         </div>
                     `;
                     hudCulprits.appendChild(li);
@@ -330,16 +349,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     const ext = culprit.type === 'css' ? '.css' : '.js';
                     const nameColor = culprit.type === 'css' ? '#00d2ff' : '#f0f0f1';
                     
+                    const deps = culprit.dependents || [];
+                    let depsHtml = '';
+                    let depsData = '';
+                    if (deps.length > 0) {
+                        const alertSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ff4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-top: -2px; margin-right: 3px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`;
+                        depsHtml = `<span class="corepulse-size-badge" style="color:#ff4444; border-color:rgba(255,68,68,0.3);" title="Required by: ${deps.join(', ')}">${alertSvg}${deps.length} Deps</span>`;
+                        depsData = deps.join(',');
+                    }
+
                     const li = document.createElement('li');
                     li.style.display = 'flex'; li.style.justifyContent = 'space-between'; li.style.alignItems = 'center';
                     li.style.borderLeftColor = '#a155ff'; 
                     li.innerHTML = `
                         <div>
                             <strong style="color: ${nameColor};">${culprit.handle}${ext}</strong>
-                            <span class="corepulse-size-badge external">External</span><br>
+                            <span class="corepulse-size-badge external">External</span>
+                            ${depsHtml}<br>
                             <span style="font-size: 11px; color: #a7aaad;">Domain: ${culprit.domain}</span>
                         </div>
-                        <button class="corepulse-kill-toggle corepulse-btn-kill" data-handle="${culprit.handle}">Kill</button>
+                        <button class="corepulse-kill-toggle corepulse-btn-kill" data-handle="${culprit.handle}" data-dependents="${depsData}">Kill</button>
                     `;
                     hudExternals.appendChild(li);
                 });
@@ -354,7 +383,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 hudGraveyardList.innerHTML = '';
                 killedHandles.forEach(handle => {
                     const ruleData = killedData[handle];
-                    const ruleText = ruleData.rule === 'everywhere' ? 'Global Block' : (ruleData.rule === 'only' ? 'Blocked on this page' : (ruleData.rule === 'Simulated (Dry Run)' ? 'Simulated (Dry Run)' : 'Blocked on other pages'));
+                    
+                    // FIXED: Check if the specific script is real or simulated and pass data attribute to button
+                    const isSimulated = ruleData.rule === 'Simulated (Dry Run)';
+                    const ruleText = isSimulated ? 'Simulated (Dry Run)' : (ruleData.rule === 'everywhere' ? 'Global Block' : (ruleData.rule === 'only' ? 'Blocked on this page' : 'Blocked on other pages'));
+                    
                     const li = document.createElement('li');
                     li.style.display = 'flex'; li.style.justifyContent = 'space-between'; li.style.alignItems = 'center';
                     li.innerHTML = `
@@ -362,7 +395,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <strong style="color: #f0f0f1; text-decoration: line-through; opacity: 0.6;">${handle}</strong><br>
                             <span style="font-size: 11px; color: #ffcc00;">Rule: ${ruleText}</span>
                         </div>
-                        <button class="corepulse-kill-toggle corepulse-btn-revive" data-handle="${handle}" data-rule="revive">Revive</button>
+                        <button class="corepulse-kill-toggle corepulse-btn-revive" data-handle="${handle}" data-simulated="${isSimulated}">Revive</button>
                     `;
                     hudGraveyardList.appendChild(li);
                 });
@@ -473,6 +506,24 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             currentSniperTarget = killBtn.getAttribute('data-handle');
             document.getElementById('corepulse-sniper-target').innerText = currentSniperTarget;
+            
+            const depsAttr = killBtn.getAttribute('data-dependents');
+            const depWarningBox = document.getElementById('corepulse-dependency-warning');
+            const depList = document.getElementById('corepulse-dependency-list');
+            
+            if (depsAttr && depsAttr.length > 0) {
+                const deps = depsAttr.split(',');
+                depList.innerHTML = '';
+                deps.forEach(dep => {
+                    const li = document.createElement('li');
+                    li.innerText = dep;
+                    depList.appendChild(li);
+                });
+                depWarningBox.style.display = 'block';
+            } else {
+                depWarningBox.style.display = 'none';
+            }
+
             sniperModal.style.display = 'flex';
             if (hud) hud.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -488,7 +539,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const rule = sniperBtn.getAttribute('data-rule');
             sniperBtn.innerText = 'Targeting...';
 
-            // v1.1.0: Intercept for Simulation Mode
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('cp_simulate') === 'true') {
                 let currentTargets = urlParams.get('cp_target') ? urlParams.get('cp_target').split(',') : [];
@@ -521,12 +571,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (reviveBtn) {
             e.preventDefault();
             const handle = reviveBtn.getAttribute('data-handle');
+            
+            // Verify if we are dealing with a simulated script or a real one
+            const isSimulatedTarget = reviveBtn.getAttribute('data-simulated') === 'true';
+
             reviveBtn.innerText = '...';
             reviveBtn.style.opacity = '0.5';
 
-            // v1.1.0: Intercept for Simulation Mode
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('cp_simulate') === 'true') {
+            if (isSimulatedTarget) {
+                // Remove from URL params if it is simulated
+                const urlParams = new URLSearchParams(window.location.search);
                 let currentTargets = urlParams.get('cp_target') ? urlParams.get('cp_target').split(',') : [];
                 currentTargets = currentTargets.filter(t => t !== handle);
                 if (currentTargets.length > 0) urlParams.set('cp_target', currentTargets.join(','));
@@ -536,6 +590,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            // If it's a real kill, hit the database via AJAX regardless of SIM status
             const formData = new URLSearchParams();
             formData.append('action', 'corepulse_toggle_script');
             formData.append('handle', handle);
@@ -639,12 +694,10 @@ document.addEventListener('DOMContentLoaded', () => {
         trackWebVitals();
     }
     
-    // v1.1.0: Handle the HUD Toggle Switch
     const simToggle = document.getElementById('corepulse-sim-toggle');
     const simLabel = document.getElementById('corepulse-sim-label');
     
     if (simToggle) {
-        // Highlight label if active on load
         if (simToggle.checked && simLabel) {
             simLabel.style.color = '#00ff00';
             simLabel.innerText = 'SIM: ON';
@@ -656,10 +709,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 urlParams.set('cp_simulate', 'true');
             } else {
                 urlParams.delete('cp_simulate');
-                urlParams.delete('cp_target'); // Clear targets when turning off
+                urlParams.delete('cp_target'); 
             }
             sessionStorage.setItem('corepulse_hud_open', 'true');
-            window.location.search = urlParams.toString(); // Reloads page
+            window.location.search = urlParams.toString(); 
         });
     }
 });
+
+// v1.2.0: Historical Pulse Logs Beacon
+    setTimeout(() => {
+        if (!window.corepulse_ajax || !window.corePulseData) return;
+
+        const ttfbText = document.getElementById('corepulse-hud-ttfb')?.innerText || '0';
+        const inpText  = document.getElementById('corepulse-hud-inp')?.innerText || '0';
+        const clsText  = document.getElementById('corepulse-hud-cls')?.innerText || '0';
+
+        const formData = new URLSearchParams();
+        formData.append('action', 'corepulse_log_vitals');
+        formData.append('js_kb', window.corePulseData.weight || 0);
+        formData.append('css_kb', window.corePulseData.css_weight || 0);
+        formData.append('ttfb', parseInt(ttfbText));
+        formData.append('inp', parseInt(inpText));
+        formData.append('cls', parseFloat(clsText));
+        formData.append('url', window.location.pathname);
+        formData.append('security', window.corepulse_ajax.nonce);
+
+        // Send payload quietly in the background
+        fetch(window.corepulse_ajax.url, { 
+            method: 'POST', 
+            body: formData,
+            keepalive: true 
+        }).catch(() => {}); // Ignore errors so it never bothers the user
+        
+    }, 5000); // Wait 5 seconds after load so we don't block rendering

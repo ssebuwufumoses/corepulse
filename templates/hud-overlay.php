@@ -149,6 +149,20 @@
             <div class="corepulse-sniper-content">
                 <h4>Sniper Engine</h4>
                 <p>Where do you want to kill <strong id="corepulse-sniper-target" style="color:#ffcc00;"></strong>?</p>
+                
+                <div id="corepulse-dependency-warning" style="display: none; background: rgba(255, 68, 68, 0.1); border-left: 3px solid #ff4444; padding: 10px; margin: 15px 0; font-size: 11px; text-align: left; color: #ff4444;">
+                    <strong style="display: flex; align-items: center; gap: 5px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ff4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                            <line x1="12" y1="9" x2="12" y2="13"></line>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                        Warning: Foundation Asset
+                    </strong>
+                    <div style="margin-top: 5px; color: #a7aaad;">This asset is required by the following active scripts. Killing it will likely break them:</div>
+                    <ul id="corepulse-dependency-list" style="margin: 5px 0 0 20px; padding: 0; color: #f0f0f1; list-style-type: disc;"></ul>
+                </div>
+
                 <div class="corepulse-sniper-options">
                     <button class="corepulse-sniper-btn" data-rule="everywhere">Kill Everywhere (Global)</button>
                     <button class="corepulse-sniper-btn" data-rule="only">Kill on THIS Page Only</button>
