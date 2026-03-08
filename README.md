@@ -39,8 +39,8 @@ CorePulse is built for the long haul. Here is what is currently being engineered
 
 * **[v1.1.0] Headless Simulation Mode:** Preview the performance impact of dequeuing a script *before* applying the change globally.
 * **[v1.1.0] Asset Dependency Mapping:** Automatically detect if a script you are about to "Snipe" is a dependency for another active script.
-* **[v1.2.0] Historical Pulse Logs:** Store local snapshots of Web Vitals to see if your site performance is improving or degrading over time.
-* **[v1.2.0] Auto-Preconnect Engine:** Intelligently detect 3rd-party domains (Google Fonts, Analytics) and inject `preconnect` hints automatically.
+* **[v1.1.0] Historical Pulse Logs:** Store local snapshots of Web Vitals to see if your site performance is improving or degrading over time.
+* **[v1.1.0] Auto-Preconnect Engine:** Intelligently detect 3rd-party domains (Google Fonts, Analytics) and inject `preconnect` hints automatically.
 
 ## Frequently Asked Questions
 
