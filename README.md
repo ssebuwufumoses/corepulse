@@ -5,13 +5,6 @@
 ![PHP](https://img.shields.io/badge/PHP-7.4+-777bb4.svg)
 ![License](https://img.shields.io/badge/License-GPLv2-green.svg)
 
-# ⚡ CorePulse
-
-![Version](https://img.shields.io/badge/Version-1.0.0-00d2ff.svg)
-![WordPress](https://img.shields.io/badge/WordPress-6.0+-0073aa.svg)
-![PHP](https://img.shields.io/badge/PHP-7.4+-777bb4.svg)
-![License](https://img.shields.io/badge/License-GPLv2-green.svg)
-
 # CorePulse
 **CorePulse** is a server-centric WordPress performance engine engineered to surgically eliminate frontend bloat and optimize Core Web Vitals.
 
