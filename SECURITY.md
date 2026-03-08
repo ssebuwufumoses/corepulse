@@ -11,7 +11,7 @@ Currently, only the latest major release of CorePulse is actively supported with
 
 ## Reporting a Vulnerability
 
-**🚨 Please do not report security vulnerabilities through public GitHub issues.**
+** Please do not report security vulnerabilities through public GitHub issues.**
 
 If you discover a security vulnerability within CorePulse, please send a private email to ssebuwufumoses1991@gmail.com. All security vulnerabilities will be promptly addressed and kept confidential until a patch is released.
 
