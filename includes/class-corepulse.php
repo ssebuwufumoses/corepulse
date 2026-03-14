@@ -5,6 +5,16 @@ class CorePulse {
     public function __construct() {
         $this->load_dependencies();
         $this->define_admin_hooks();
+        $this->enable_query_tracking(); // Start the SQL Radar
+    }
+
+    private function enable_query_tracking() {
+        // Turn on WordPress's hidden query tracker ONLY for Admins
+        add_action( 'init', function() {
+            if ( current_user_can( 'manage_options' ) && ! defined( 'SAVEQUERIES' ) ) {
+                define( 'SAVEQUERIES', true );
+            }
+        }, 1 );
     }
 
     private function load_dependencies() {
@@ -16,9 +26,15 @@ class CorePulse {
         // Kill Switch dependency
         require_once COREPULSE_PATH . 'includes/class-kill-switch.php';
         
-        // v1.2.0 Dependencies
+        // Dependencies
         require_once COREPULSE_PATH . 'includes/class-preconnect-engine.php';
         require_once COREPULSE_PATH . 'includes/class-pulse-logs.php';
+        require_once COREPULSE_PATH . 'includes/class-database-autopsy.php';
+
+        // WP-CLI Support
+        if ( defined( 'WP_CLI' ) && WP_CLI ) {
+            require_once COREPULSE_PATH . 'includes/class-corepulse-cli.php';
+        }
     }
 
     private function define_admin_hooks() {
@@ -29,12 +45,21 @@ class CorePulse {
         // Initialized the Kill Switch engine
         new CorePulse_Kill_Switch();
         
-        // Boot up v1.2.0 Engines
+        // Boot up Engines
         new CorePulse_Preconnect_Engine();
         new CorePulse_Pulse_Logs();
+        new CorePulse_Database_Autopsy();
+
+        // Register WP-CLI Commands
+        if ( defined( 'WP_CLI' ) && WP_CLI ) {
+            WP_CLI::add_command( 'corepulse', 'CorePulse_CLI' );
+        }
 
         add_action( 'admin_menu', array( $this, 'add_plugin_admin_menu' ) );
         add_action( 'admin_init', array( $this, 'register_plugin_settings' ) );
+        
+        // Load local assets for the settings page (fixes CDN error)
+        add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
     }
 
     /**
@@ -48,6 +73,17 @@ class CorePulse {
             'corepulse',
             array( $this, 'display_plugin_admin_page' )
         );
+    }
+
+    /**
+     * Enqueue assets strictly for the backend settings page.
+     */
+    public function enqueue_admin_assets( $hook ) {
+        // Only load Chart.js on the CorePulse settings page to avoid conflicts
+        if ( $hook !== 'settings_page_corepulse' ) {
+            return;
+        }
+        wp_enqueue_script( 'corepulse-chart', COREPULSE_URL . 'assets/js/chart.min.js', array(), '4.4.1', true );
     }
 
     /**

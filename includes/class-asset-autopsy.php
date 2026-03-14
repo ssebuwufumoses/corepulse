@@ -43,10 +43,23 @@ class CorePulse_Asset_Autopsy {
         $total_js_size = 0;
         $total_css_size = 0;
         $culprits = array();
+        
+        // Initialize Blame Game Matrix
+        $blame_matrix = array();
 
-        // v1.1.0: Asset Dependency Reverse Mapping Arrays
+        // Asset Dependency Reverse Mapping Arrays
         $js_dependents = array();
         $css_dependents = array();
+
+        // Core Guard Protection Matrix
+        $unstoppable_core = array( 
+            'jquery', 'jquery-core', 'jquery-migrate', 'wp-api', 
+            'wp-hooks', 'wp-i18n', 'wp-polyfill', 'wp-data',
+            'elementor-frontend', 'elementor-common' 
+        );
+        $high_risk_core = array( 
+            'wp-embed', 'comment-reply', 'hoverIntent', 'admin-bar' 
+        );
 
         if ( isset( $wp_scripts ) ) {
             $all_scripts = array_unique( array_merge( (array) $wp_scripts->queue, (array) $wp_scripts->done ) );
@@ -70,19 +83,39 @@ class CorePulse_Asset_Autopsy {
 
                 $src = isset( $wp_scripts->registered[$handle] ) ? $wp_scripts->registered[$handle]->src : '';
                 $size_info = $this->get_file_size_info( $src );
-                $suggestion = 'Custom or 3rd-party script.';
                 $dependents = isset( $js_dependents[$handle] ) ? array_unique( $js_dependents[$handle] ) : array();
                 
+                // Track Blame Game Weight
+                $provider_name = $this->get_provider( $src );
+                if ( ! empty( $provider_name ) ) {
+                    if ( ! isset( $blame_matrix[$provider_name] ) ) $blame_matrix[$provider_name] = 0;
+                    $blame_matrix[$provider_name] += $size_info['bytes'];
+                }
+                
+                // Trigger Smart Pulse AI
+                $suggestion = CorePulse_Suggestions::analyze_asset( $handle, 'js', $size_info['bytes'], $dependents );
+                
+                // Determine Core Guard Status (Overrides suggestion if critical)
+                $protection = 'none';
+                if ( in_array( $handle, $unstoppable_core ) ) {
+                    $protection = 'unstoppable';
+                    $suggestion = 'CRITICAL CORE ASSET. Dequeuing is disabled to prevent fatal crashes.';
+                } elseif ( in_array( $handle, $high_risk_core ) ) {
+                    $protection = 'warning';
+                    $suggestion = 'Native WP Asset. Dequeuing may break expected core functionality.';
+                }
+                
                 $culprits[] = array( 
-                    'handle'     => $handle, 
-                    'url'        => $src,
-                    'suggestion' => $suggestion,
-                    'type'       => 'js',
-                    'size'       => $size_info['display'],
-                    'bytes'      => $size_info['bytes'],
-                    'domain'     => $size_info['domain'],
-                    'provider'   => $this->get_provider( $src ),
-                    'dependents' => $dependents 
+                    'handle'           => $handle, 
+                    'url'              => $src,
+                    'suggestion'       => $suggestion,
+                    'type'             => 'js',
+                    'size'             => $size_info['display'],
+                    'bytes'            => $size_info['bytes'],
+                    'domain'           => $size_info['domain'],
+                    'provider'         => $provider_name,
+                    'dependents'       => $dependents,
+                    'protection_level' => $protection 
                 );
                 $total_js_size += ( $size_info['bytes'] / 1024 ); 
             }
@@ -111,25 +144,75 @@ class CorePulse_Asset_Autopsy {
                 $size_info = $this->get_file_size_info( $src );
                 $dependents = isset( $css_dependents[$handle] ) ? array_unique( $css_dependents[$handle] ) : array();
                 
-                $suggestion = 'Heavy stylesheet. Dequeue on pages where this design is not needed.';
-                if ( strpos( $handle, 'elementor' ) !== false ) $suggestion = 'Elementor builder CSS. Often loads globally even when unused.';
+                // Track Blame Game Weight
+                $provider_name = $this->get_provider( $src );
+                if ( ! empty( $provider_name ) ) {
+                    if ( ! isset( $blame_matrix[$provider_name] ) ) $blame_matrix[$provider_name] = 0;
+                    $blame_matrix[$provider_name] += $size_info['bytes'];
+                }
+                
+                // Trigger Smart Pulse AI
+                $suggestion = CorePulse_Suggestions::analyze_asset( $handle, 'css', $size_info['bytes'], $dependents );
                 
                 $culprits[] = array( 
-                    'handle'     => $handle, 
-                    'url'        => $src,
-                    'suggestion' => $suggestion,
-                    'type'       => 'css',
-                    'size'       => $size_info['display'],
-                    'bytes'      => $size_info['bytes'],
-                    'domain'     => $size_info['domain'],
-                    'provider'   => $this->get_provider( $src ),
-                    'dependents' => $dependents
+                    'handle'           => $handle, 
+                    'url'              => $src,
+                    'suggestion'       => $suggestion,
+                    'type'             => 'css',
+                    'size'             => $size_info['display'],
+                    'bytes'            => $size_info['bytes'],
+                    'domain'           => $size_info['domain'],
+                    'provider'         => $provider_name,
+                    'dependents'       => $dependents,
+                    'protection_level' => 'none'
                 );
                 $total_css_size += ( $size_info['bytes'] / 1024 ); 
             }
         }
 
         usort($culprits, function($a, $b) { return $b['bytes'] <=> $a['bytes']; });
+
+        // Format the Blame Game Matrix
+        arsort( $blame_matrix );
+        $blame_game_formatted = array();
+        foreach ( $blame_matrix as $prov => $bytes ) {
+            $blame_game_formatted[] = array( 'provider' => $prov, 'kb' => round( $bytes / 1024, 1 ) );
+        }
+
+        // ------------------------------------------------------------------
+        // Query Autopsy Engine (Slow SQL Radar)
+        // ------------------------------------------------------------------
+        global $wpdb;
+        $slow_queries = array();
+        $savequeries_enabled = defined( 'SAVEQUERIES' ) && SAVEQUERIES;
+
+        if ( $savequeries_enabled && ! empty( $wpdb->queries ) ) {
+            $queries = $wpdb->queries;
+            
+            // Sort queries by execution time (Index 1 is the time in seconds)
+            usort( $queries, function( $a, $b ) {
+                return $b[1] <=> $a[1];
+            } );
+            
+            // Grab the top 5 slowest queries
+            $top_queries = array_slice( $queries, 0, 5 );
+            foreach ( $top_queries as $q ) {
+                $stack = explode( ',', $q[2] );
+                $caller = end( $stack ); // Get the specific function that ran the query
+                
+                $sql = wp_strip_all_tags( $q[0] );
+                if ( strlen( $sql ) > 120 ) {
+                    $sql = substr( $sql, 0, 120 ) . '...';
+                }
+                
+                $slow_queries[] = array(
+                    'time'   => round( $q[1] * 1000, 2 ), // Convert seconds to ms
+                    'query'  => $sql,
+                    'caller' => trim( $caller )
+                );
+            }
+        }
+        // ------------------------------------------------------------------
 
         $killed_scripts = get_option( 'corepulse_killed_scripts', array() );
         $preloaded_assets = get_option( 'corepulse_preloaded_assets', array() ); 
@@ -145,14 +228,18 @@ class CorePulse_Asset_Autopsy {
             'hide_trigger' => (bool) get_option( 'corepulse_hide_floating_node', 0 )
         );
 
+        // Updated printf to output slow_queries and savequeries
         printf(
-            '<script>window.corePulseData = { weight: %d, css_weight: %d, culprits: %s, rules: %s, settings: %s, preloads: %s };</script>',
+            '<script>window.corePulseData = { weight: %d, css_weight: %d, culprits: %s, rules: %s, settings: %s, preloads: %s, blame_game: %s, slow_queries: %s, savequeries: %s };</script>',
             intval( $total_js_size ),
             intval( $total_css_size ),
             wp_json_encode( $culprits ),
             wp_json_encode( $killed_scripts ),
             wp_json_encode( $user_settings ),
-            wp_json_encode( $preloaded_assets )
+            wp_json_encode( $preloaded_assets ),
+            wp_json_encode( $blame_game_formatted ),
+            wp_json_encode( $slow_queries ),
+            wp_json_encode( $savequeries_enabled )
         );
         
         include COREPULSE_PATH . 'templates/hud-overlay.php';
