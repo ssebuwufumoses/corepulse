@@ -1,117 +1,140 @@
 === CorePulse ===
 Contributors: ssebuwufumoses
-Tags: performance, core web vitals, speed, accessibility, optimization
+Tags: performance, core web vitals, speed, accessibility, optimization, database cleaner, wp-cli, dequeue, asset manager
 Requires at least: 5.8
 Tested up to: 6.9
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Surgically optimize performance. Monitor JS payloads, kill heavy scripts, boost LCP assets, and audit DOM depth and WCAG health in real-time.
+The enterprise server-centric performance engine. Surgically dequeue JS/CSS, map asset dependencies, track slow SQL queries, audit DOM depth, and purge database bloat in real-time.
 
 == Description ==
 
 Modern WordPress development has a hidden performance killer: **Monolithic Hydration and Structural Bloat**. 
 
-As sites increasingly rely on heavy visual page builders and massive JavaScript frameworks to render frontend UI, the processing burden is shifted entirely to the user's browser. This results in massive bundle sizes, DOM trees thousands of nodes deep ("div soup"), and failing Core Web Vitals.
+As sites increasingly rely on heavy visual page builders (Elementor, Divi, Bricks) and massive JavaScript frameworks to render frontend UI, the processing burden is shifted entirely to the user's browser. This results in massive bundle sizes, DOM trees thousands of nodes deep ("div soup"), bloated `wp_options` tables, and failing Google Core Web Vitals (CWV).
 
-**CorePulse** is a lightweight, server-centric performance monitor built specifically to help developers and agency owners catch frontend bloat before it ruins the user experience. It actively measures your site's JavaScript weight, CSS payloads, DOM depth, and structural accessibility in real-time, giving you the surgical tools to eliminate unnecessary scripts and boost critical assets safely.
+**CorePulse** is a highly technical, server-centric performance engine built specifically for developers and agency owners. Instead of relying on client-side JS deferral tricks (which often cause cumulative layout shifts), CorePulse intercepts the WordPress asset pipeline at the server level, allowing you to surgically eliminate bloat before it is ever sent over the network.
 
-### Architectural Philosophy
-CorePulse is built on a **Server-Centric Performance Model**. It intervenes at the server level by intercepting the WordPress `$wp_scripts` and `$wp_styles` globals. This allows you to surgically dequeue heavy assets *before* they are sent over the network, while dynamically injecting preloads for critical rendering paths.
+### Architectural Philosophy: Server-Centric Optimization
+Most performance plugins attempt to fix bloat *after* it reaches the browser by using JavaScript to delay script execution. CorePulse intervenes during the PHP compilation phase. By hooking late into the `wp_enqueue_scripts` and `wp_print_scripts` actions, CorePulse manipulates the `$wp_scripts` and `$wp_styles` globals directly. If you kill a script, it is physically stripped from the HTML response, resulting in an unarguable reduction in Time to First Byte (TTFB) and network payload size.
 
-### The Core Engines
+---
 
-* **The Asset Autopsy (HUD):** A sleek, dark-mode slide-out dashboard detailing the exact monolithic libraries loading on the current page. It combines data from PHP and the browser's Performance API to track live TTFB (Time to First Byte), INP Delay (Interaction to Next Paint), and CLS (Cumulative Layout Shift).
-* **The Sniper Engine (Kill Switch):** Conditionally dequeue scripts and stylesheets without writing a single line of PHP. Kill a script globally, kill it on a single page, or kill it everywhere *except* a specific page.
-* **Headless Simulation Mode (Dry Run):** Safely preview the performance impact of unloading a script before applying the change globally to the live frontend.
-* **Asset Dependency Mapping:** Actively maps the WordPress dependency tree and warns you with a "Foundational Asset" tag before you kill scripts that other active assets rely on.
-* **Auto-Preconnect Engine:** Automatically detects 3rd-party domains (Google Fonts, Analytics) queued on the page and intelligently injects `<link rel="preconnect">` and `<link rel="dns-prefetch">` hints to accelerate DNS resolution.
-* **Historical Pulse Logs:** A local, auto-cleaning database that captures daily snapshots of your Web Vitals (TTFB, INP, CLS) and payload weights so you can track performance trends over time.
-* **The Boost Engine:** Accelerate your Critical Rendering Path. Click "BOOST" on any heavy hero image, critical CSS, or primary font, and CorePulse will dynamically inject `<link rel="preload">` tags to the very top of your document.
-* **The DOM Depth Scanner:** Excessive DOM nodes crush mobile CPU performance. This heuristic scanner continuously counts every single HTML node rendered on the page, warning you when page builders generate excess "div soup".
-* **The WCAG Accessibility Guard:** A zero-dependency JavaScript engine that instantly audits the rendered DOM for structural accessibility failures (missing `alt` tags, unlabelled inputs). Clicking "TRACE" will scroll the page to the exact violating element and highlight it.
+### The Core Engines (Technical Deep Dive)
 
-### Enterprise Safety Features
+#### 1. The Asset Autopsy (HUD)
+A sleek, isolated React-style interface injected via the `wp_footer` hook. It does not rely on third-party APIs. Instead, it utilizes the browser's native `PerformanceObserver` API to track Web Vitals locally.
+* **TTFB & Payload:** Captured via `performance.getEntriesByType('navigation')` and `('resource')`.
+* **INP (Interaction to Next Paint):** Monitored using `PerformanceObserver` listening for `event` types with a duration threshold of 16ms.
+* **CLS (Cumulative Layout Shift):** Continuously calculated via `layout-shift` entries, ignoring those with `hadRecentInput`.
 
-* **Active Budget Alerts:** The HUD trigger node actively pulses yellow (Warning) or red (Danger) the moment your page payload crosses your defined server-centric thresholds.
-* **Emergency Restore Safety Net:** Aggressively dequeuing JavaScript can sometimes break a page. CorePulse injects a lightweight `window.onerror` trap. If you forcefully dequeue a load-bearing script that completely crashes the page layout, the Admin Bar will violently flash red and drop an "Emergency Restore" button into your UI to instantly revive all killed scripts and reload the page.
-* **Builder-Agnostic Isolation:** To prevent the HUD from ruining your editing canvas or reporting artificially inflated DOM sizes, CorePulse automatically detects when you are actively designing in Elementor, Divi, Beaver Builder, Oxygen, Bricks, or Gutenberg. It silently hides its UI to protect your workflow.
+#### 2. The Dependency Matrix
+WordPress scripts are notorious for "spaghetti" dependencies (e.g., `wp_enqueue_script('child', 'url', array('parent'))`). CorePulse recursively scans the `deps` array inside the `$wp_scripts->registered` object. It then outputs a visual, terminal-style hierarchy tree (`├──` and `└──`) in the HUD, showing exactly which foundational scripts (like `jquery.js` or `elementor-frontend.js`) are triggering child assets. This prevents fatal crashes caused by blind dequeuing.
 
-### Configuration & Settings
-Navigate to **Settings > CorePulse** to adjust your server-centric performance budgets:
-* **JS Warning / Danger Thresholds:** Control when the Admin Bar turns Yellow or Red.
-* **CSS Danger Threshold:** Set the size limit for cascading stylesheets.
-* **DOM Danger Threshold:** The hard limit for HTML elements before flagging a Lighthouse failure (Default: 1500).
-* **Heavy Media Limit:** Any image, font, or video exceeding this size will trigger the Heavy Media Radar in the HUD.
+#### 3. Query Autopsy (Slow SQL Radar)
+When `SAVEQUERIES` is defined in `wp-config.php`, WordPress stores every database query in the `$wpdb->queries` array. CorePulse intercepts this array at shutdown, calculates the execution time of every query, and uses `debug_backtrace` logic to isolate the exact PHP function or plugin that triggered it. Any query taking longer than 10ms is flagged yellow; over 50ms is flagged red. 
+
+#### 4. Database Autopsy & Transient Purger
+Heavy plugins often abuse the `wp_options` table by setting `autoload = 'yes'` on massive data strings, destroying TTFB. 
+* **Autoload Scanner:** CorePulse runs a direct `SELECT option_name, option_value` query, calculates the byte length of every autoloaded string, and lists the top 15 heaviest offenders.
+* **1-Click Purger:** Executes a highly secure, nonced `DELETE FROM wp_options WHERE option_name LIKE '_transient_%'` query via AJAX to instantly sweep expired transients without requiring a page reload.
+
+#### 5. The Sniper Engine (Kill Switch)
+A precision asset manager. Rules are saved as JSON in a single `corepulse_killed_scripts` option. During page load, CorePulse checks the current Post ID against this rule set. If a match is found (e.g., "Kill Everywhere EXCEPT Post ID 42"), it executes `wp_dequeue_script()`, `wp_deregister_script()`, `wp_dequeue_style()`, and `wp_deregister_style()` late in the priority queue (Priority 9999) to override stubborn theme assets.
+
+#### 6. Headless Simulation Mode (Dry Run)
+Flipping the "SIM" switch appends a `?cp_simulate=true` parameter to the URL. In this mode, the Sniper Engine intercepts your "Kill" commands *before* they are sent to the database AJAX handler, storing them temporarily in URL parameters and `sessionStorage`. This allows you to aggressively strip core scripts and verify if the page breaks visually, safely isolated within your own browser session.
+
+#### 7. Plugin Profiler
+Maps the registered URL of every active script/stylesheet to the active plugin directories (using `plugin_dir_path`). It aggregates the file sizes and outputs a leaderboard showing exactly how many kilobytes each individual plugin is injecting into the current DOM.
+
+#### 8. The Boost & Auto-Preconnect Engines
+Clicking "BOOST" on an asset stores its URL in the `corepulse_preloaded_assets` database option. CorePulse hooks into `wp_head` (Priority 1) to aggressively output `<link rel="preload" as="..." href="...">` tags for these items, forcing the browser's speculative parser to prioritize them. It simultaneously scans `$wp_scripts` for external hostnames (fonts.googleapis.com, use.typekit.net) and automatically outputs `<link rel="preconnect">` hints.
+
+#### 9. The WCAG & Structural Guards
+A zero-dependency JavaScript heuristic engine that parses the live DOM. 
+* **Accessibility:** Flags `img:not([alt])`, positive `tabindex` traps, empty interactive elements (`<a>`, `<button>`), and unlabelled inputs by checking computed styles to ensure they aren't hidden from screen readers. 
+* **LCP Guard:** Identifies the Largest Contentful Paint node via `PerformanceObserver`. If the node is an `<img>` containing `loading="lazy"`, it throws a critical render-block warning. Clicking "TRACE" executes `scrollIntoView()` and applies a pulsing CSS outline to the offending element.
+
+---
+
+### Enterprise Tools & Integration
+
+* **ROI Dashboard (Chart.js):** Fires a lightweight, non-blocking AJAX beacon 5 seconds after page load (`keepalive: true`) to log your final Web Vitals. This data is rendered in the backend via a locally hosted `chart.min.js` library, mapping TTFB and Payload weight over time.
+* **WP-CLI Integration:** Built on `WP_CLI_Command`. Provides direct SSH access to your optimization rules. Commands include `wp corepulse status`, `wp corepulse clear-logs`, and `wp corepulse reset-rules`.
+* **JSON Cloud Portability:** Easily port rules between staging and production. The import engine validates the JSON structure before overwriting the `corepulse_killed_scripts` option, ensuring no corrupted data breaks the site.
+* **Builder-Agnostic Isolation:** Checks against `$_GET['elementor-preview']`, `$_GET['et_fb']`, `is_customize_preview()`, and Gutenberg context to completely disable the HUD during active design sessions, preventing DOM-count pollution and canvas interference.
 
 == Installation ==
 
-### Standard Installation
-1. Navigate to your WordPress Admin Dashboard.
-2. Go to **Plugins > Add New** and click **Upload Plugin**.
-3. Select the `corepulse.zip` file and click **Install Now**.
-4. Click **Activate Plugin**.
-
-### Post-Installation Setup
-1. Navigate to **Settings > CorePulse** in your WordPress dashboard.
-2. Configure your specific "Warning" (Yellow) and "Danger" (Red) payload thresholds based on your project's performance budget.
-3. Visit the live frontend of your site.
-4. Click the green **CorePulse: Active** button in your Admin Bar (or use `Ctrl+Shift+X`) to slide open the Asset Autopsy HUD.
+1. Upload the `corepulse.zip` file via your WordPress Admin (Plugins > Add New).
+2. Activate the plugin.
+3. Navigate to **Settings > CorePulse** to define your payload byte-limit thresholds.
+4. Visit the frontend (logged in as an Administrator) and use `Ctrl+Shift+X` or the green floating Admin Bar node to open the HUD.
 
 == Frequently Asked Questions ==
 
-= Why don't I see the CorePulse HUD when I am in Elementor or Gutenberg? =
-This is an intentional feature called **Builder Isolation**. CorePulse detects when you are actively designing a page and completely disables its visual UI so it doesn't interfere with your builder's canvas or skew the DOM data. It will only appear on the live, public-facing frontend.
+= Does CorePulse replace WP Rocket, LiteSpeed, or other caching plugins? =
+Absolutely not. CorePulse is a *Performance Interception Engine*, not a page cache. Caching plugins speed up the *delivery* of the HTML document. CorePulse reduces the *actual complexity* of the HTML document (smaller DOM, fewer scripts, faster JS parsing). They are designed to be run concurrently. Use CorePulse to strip the bloat, and WP Rocket to cache the resulting lightweight page.
 
-= What is the difference between Kill and Boost? =
-**KILL** intercepts a script before it ever reaches the browser, completely removing it from the page to save payload size. 
-**BOOST** injects a `<link rel="preload">` tag at the top of the HTML document, forcing the browser to download a critical asset (like a Hero Image or a Font) in the background before the page even finishes rendering. We recommend only boosting 2-4 critical assets per page.
+= Why doesn't the Slow SQL Radar show any queries? =
+To protect server RAM, WordPress disables complex query tracking in production environments. To activate CorePulse's database tracking, you must open your server's `wp-config.php` file and add:
+`define( 'SAVEQUERIES', true );`
+Once added, the HUD will instantly begin displaying execution times and PHP callers.
 
-= Why is my CorePulse icon Red? =
-A red pulse means your page's payload has exceeded your configured "Danger" threshold. Open the Asset Autopsy to see exactly which local or external scripts are causing the bloat.
+= What happens if I "Snipe" a critical framework like jQuery? =
+If you dequeue a foundational asset, any dependent scripts will fail, resulting in a broken layout. However, CorePulse protects you in two ways:
+1. **The Dependency Warning:** Before you kill a script, the HUD will check the `$wp_scripts->registered` object. If the script has dependents, a red modal warns you exactly which child scripts will break.
+2. **Emergency Restore Net:** CorePulse injects a `window.onerror` event listener. If a fatal JS exception occurs due to a missing script, the Admin Bar flashes red and drops a 1-click "Emergency Restore" button to instantly rewrite the database and reload the page.
 
-= The pulse is flashing violently red and a "Fatal JS Error" box appeared. What happened? =
-You triggered the **Emergency Restore Safety Net**. This means a script you recently sent to "The Graveyard" was load-bearing, and its removal caused the browser to throw a fatal JavaScript exception. Click the red "Emergency Restore All" button in the HUD to instantly fix your site.
+= How exactly does the "Dry Run" Simulation work? =
+When SIM mode is active, CorePulse bypasses the standard AJAX database save. Instead, it pushes the "killed" script handles into a comma-separated `?cp_target=` URL parameter and saves the state to your browser's `sessionStorage`. The PHP backend reads this `$_GET` variable during `wp_enqueue_scripts` and temporarily dequeues them just for your session. Your live users remain completely unaffected.
 
-= My DOM Nodes number is red. What does that mean? =
-Google Lighthouse recommends keeping your total HTML elements (DOM nodes) under 800. Page builders are notorious for nesting dozens of empty containers inside each other to achieve simple layouts. CorePulse turns red when your builder has pushed the page structure past 1,500 nodes (a critical Lighthouse failure).
+= How does the WCAG tracer find invisible elements? =
+The WCAG Guard uses `window.getComputedStyle(input)` to calculate the offset width, height, visibility, and display state of elements. It purposefully ignores inputs that have `display: none`, `opacity: 0`, or `aria-hidden="true"`, ensuring it only flags accessibility violations that are actually interacting with the visual accessibility tree.
 
-= How does the WCAG Tracer work? =
-When CorePulse detects an accessibility violation (like an image missing an alt tag), it lists it in the HUD. Clicking "Trace" will smoothly scroll your browser directly to the offending element and wrap it in a pulsing red border for 20 seconds so you can identify exactly which block needs fixing in your page builder.
+= How is the "Autoloaded Bloat" calculated? =
+During a Database Scan, CorePulse runs a direct SQL query: `SELECT option_name, option_value FROM wp_options WHERE autoload = 'yes'`. It iterates through the results in PHP, using `strlen()` to calculate the exact byte size of every row, summing them up to give you your total bloat metric. A healthy site should be under 800KB.
 
-= Will this plugin slow down my site for visitors? =
-Absolutely not. CorePulse explicitly checks for Administrator privileges before loading any of its heuristic scanners or monitoring tools. If a standard user visits your site, CorePulse remains completely dormant. The only thing visitors experience are the incredibly fast load times resulting from your optimizations.
+= Is there a performance penalty for leaving the HUD active? =
+No. CorePulse utilizes a strict capability check (`current_user_can('manage_options')`) at the very top of its execution hooks. If a standard user or an unauthenticated visitor accesses the site, the plugin immediately returns early. It executes 0 bytes of frontend code, 0 heuristic DOM scanners, and 0 database metrics for your end users.
+
+= How do I use the WP-CLI commands? =
+Open your server terminal (SSH). Navigate to your `public_html` or WordPress root directory.
+* `wp corepulse status` - Prints your current warning/danger thresholds and a list of all active Sniper rules.
+* `wp corepulse reset-rules` - Instantly truncates the `corepulse_killed_scripts` option, restoring all dequeued scripts to their factory defaults.
+* `wp corepulse clear-logs` - Wipes the historical Chart.js database logs.
+
+= Are the Chart.js ROI logs going to bloat my database? =
+No. The Historical Pulse Logs are stored in a single, serialized array within `wp_options`. The backend logic enforces a strict array slice, automatically truncating the logs to keep only the 50 most recent snapshots. Older data is silently garbage-collected to prevent database bloat.
 
 == Changelog ==
 
+= 1.2.0 =
+* **Engine Update:** The Dependency Matrix - Engineered a recursive PHP mapping function to output a visual, terminal-style dependency tree (`├──` and `└──`) to prevent fatal dequeue errors.
+* **Engine Update:** Query Autopsy - Frontend Slow SQL Radar tracking database execution times and isolating PHP `debug_backtrace` callers.
+* **Engine Update:** Database Autopsy - Direct `$wpdb` scanner calculating `wp_options` autoload bloat and identifying the top 15 heaviest rows.
+* **Feature:** 1-Click Transient Purger - Secure AJAX endpoint to instantly execute a `DELETE FROM wp_options WHERE option_name LIKE '_transient_%'` query.
+* **Feature:** ROI Dashboard - Implemented `chart.min.js` locally (CDN-free) for dual-axis historical performance tracking in the WP backend.
+* **Feature:** WP-CLI Integration - Full `WP_CLI_Command` enterprise terminal support.
+* **Feature:** Plugin Profiler - Maps `$wp_scripts->src` to plugin directories to calculate exact payload weight per plugin.
+* **Feature:** Cloud Portability - JSON Export/Import functionality for transferring `corepulse_killed_scripts` arrays across environments.
+* **Feature:** 1-Click Autopsy Reports - JavaScript Clipboard API integration for pasting stats into Slack/Jira.
+* **Feature:** Heuristic Guards - Added Privacy Guard (external font tracking), Heavy Media Radar (byte-limit tracking), and Dead Asset 404 Radar.
+* **Feature:** LCP Lazy-Load Detector - `PerformanceObserver` logic to protect hero image rendering.
+
 = 1.1.0 =
-* **New:** Headless Simulation Mode - Test script unloading safely without breaking the live frontend.
-* **New:** Asset Dependency Mapping - Intelligent warnings alert you before killing foundational scripts.
-* **New:** Auto-Preconnect Engine - Automatically injects DNS resource hints for 3rd-party domains.
-* **New:** Historical Pulse Logs - Local database logging Web Vitals (TTFB, INP, CLS) to track performance over time.
-* **New:** Active Budget Alerts - The floating trigger now pulses yellow/red when page weight exceeds defined thresholds.
-* **Fix:** Resolved an issue where custom performance thresholds in the settings page would not save properly due to un-whitelisted API options.
-* **Fix:** Resolved a JavaScript race condition syncing simulated vs. real graveyard states.
-* **Tweak:** Engineered fully WCAG-compliant focus states for all HUD interactive elements.
-* **Security:** Hardened dashboard database outputs to strict WordPress VIP escaping standards.
+* **Feature:** Headless Simulation Mode (`cp_simulate` URL parameter routing).
+* **Feature:** Auto-Preconnect Engine for DNS resource hints.
+* **Feature:** Active Budget Alerts (Dynamic CSS classes based on byte thresholds).
 
 = 1.0.0 =
-* Initial Enterprise Release: Welcome to CorePulse!
-* Engineered the Asset Autopsy HUD with real-time DOM & payload scanning.
-* Engineered the 'Sniper Engine' (Kill switch) for surgical asset management.
-* Engineered the 'Boost Engine' for 1-click critical asset preloading.
-* Implemented strict Builder Isolation (Elementor, Divi, Gutenberg, Bricks, Oxygen).
-* Integrated WCAG violation tracer and LCP render-block warnings.
-* Added real-time tracking for TTFB, INP Delay, and CLS scores.
-* Added the DOM Depth Scanner to track HTML structure size against Lighthouse standards.
-* Added the Emergency Restore Safety Net (window.onerror trap) to protect developers from fatal JS crashes.
+* Initial Enterprise Release. Engineered the Asset Autopsy HUD, Sniper Engine (`wp_dequeue_script` routing), Boost Engine (`wp_head` preloads), and WCAG Tracer.
 
 == Upgrade Notice ==
 
-= 1.1.0 =
-This is a massive engine upgrade. CorePulse v1.1.0 introduces Headless Simulation Mode, Asset Dependency Mapping, Auto-Preconnect logic, and Historical Performance Logging. Update now to unlock active performance monitoring.
-
-= 1.0.0 =
-Welcome to CorePulse Version 1.0! Shift the load back to the server and take control of your Core Web Vitals today.
+= 1.2.0 =
+The Ultimate Enterprise Update. Introducing the Dependency Matrix, Query Autopsy, WP-CLI support, a Database Transient Purger, and a Chart.js ROI Dashboard. Update immediately to unlock deep database and server insights.

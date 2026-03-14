@@ -3,7 +3,7 @@
  * Plugin Name: CorePulse
  * Plugin URI: https://github.com/ssebuwufumoses/corepulse
  * Description: Real-time Hydration & Performance Monitoring. Shift the load back to the server.
- * Version: 1.1.0
+ * Version: 1.2.0
  * Author: Ssebuwufu Moses
  * Author URI: https://x.com/EduTechCenter
  * License: GPL2
