@@ -3,12 +3,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const iconElement = document.getElementById('corepulse-icon');
     let currentSniperTarget = '';
 
-    // Ensure the 'killed' data is an object BEFORE injecting simulation data
     if (window.corepulse_ajax && Array.isArray(window.corepulse_ajax.killed)) {
         window.corepulse_ajax.killed = {};
     }
 
-    // Inject simulated targets into the HUD state
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('cp_simulate') === 'true' && urlParams.get('cp_target')) {
         const simulatedTargets = urlParams.get('cp_target').split(',');
@@ -39,11 +37,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function scanDOMDepth() {
         const domCountElement = document.getElementById('corepulse-hud-dom');
         if (!domCountElement || !window.corePulseData) return;
-        
-        const settings = window.corePulseData.settings;
         const totalNodes = document.querySelectorAll('*').length;
         domCountElement.innerText = totalNodes.toLocaleString();
         
+        const settings = window.corePulseData.settings;
         if (totalNodes > settings.dom_danger) domCountElement.style.color = '#ff4444'; 
         else if (totalNodes > settings.dom_warning) domCountElement.style.color = '#ffcc00'; 
         else domCountElement.style.color = '#00ff00'; 
@@ -70,9 +67,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const rawInputs = document.querySelectorAll('input:not([type="hidden"]):not([type="submit"]):not([aria-label]):not([aria-labelledby])');
         let unlabelledInputs = 0;
+        document.querySelectorAll('.corepulse-unlabelled-offender').forEach(el => el.classList.remove('corepulse-unlabelled-offender'));
+
         Array.from(rawInputs).forEach(input => {
             if (input.closest('#wpadminbar') || input.closest('#corepulse-hud')) return;
-            if (!input.id || !document.querySelector(`label[for="${input.id}"]`)) unlabelledInputs++;
+            const style = window.getComputedStyle(input);
+            const isHidden = style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0';
+            const hasNoSize = input.offsetWidth === 0 && input.offsetHeight === 0;
+
+            if (isHidden || hasNoSize || input.getAttribute('aria-hidden') === 'true' || input.closest('[aria-hidden="true"]')) return;
+
+            if (!input.id || !document.querySelector(`label[for="${input.id}"]`)) {
+                unlabelledInputs++;
+                input.classList.add('corepulse-unlabelled-offender'); 
+            }
         });
 
         if (unlabelledInputs > 0) {
@@ -83,7 +91,137 @@ document.addEventListener('DOMContentLoaded', () => {
             wcagList.appendChild(li);
         }
 
+        const positiveTabIndex = document.querySelectorAll('[tabindex]:not([tabindex="0"]):not([tabindex="-1"])');
+        const tabTraps = Array.from(positiveTabIndex).filter(el => !el.closest('#wpadminbar') && !el.closest('#corepulse-hud'));
+        
+        if (tabTraps.length > 0) {
+            violationCount++;
+            const li = document.createElement('li');
+            li.innerHTML = `${tabTraps.length} keyboard trap(s) (Bad TabIndex). <button class="corepulse-wcag-trace-btn" data-trace="tabindex">Trace</button>`;
+            li.style.borderLeftColor = '#ffcc00';
+            wcagList.appendChild(li);
+        }
+
+        const emptyInteractives = document.querySelectorAll('button:empty:not([aria-label]), a:empty:not([aria-label])');
+        const unlabelledButtons = Array.from(emptyInteractives).filter(el => !el.closest('#wpadminbar') && !el.closest('#corepulse-hud'));
+
+        if (unlabelledButtons.length > 0) {
+            violationCount++;
+            const li = document.createElement('li');
+            li.innerHTML = `${unlabelledButtons.length} unlabelled icon button(s). <button class="corepulse-wcag-trace-btn" data-trace="empty-interactive">Trace</button>`;
+            li.style.borderLeftColor = '#ffcc00';
+            wcagList.appendChild(li);
+        }
+
         wcagContainer.style.display = violationCount > 0 ? 'block' : 'none';
+    }
+
+    // Third-Party Font & Privacy Guard (With Smart Font Extraction)
+    function scanExternalFonts() {
+        const fontContainer = document.getElementById('corepulse-hud-fonts-container');
+        const fontList = document.getElementById('corepulse-hud-fonts-list');
+        if (!fontContainer || !fontList) return;
+
+        let detectedFonts = {};
+
+        // Scan direct HTML <link> tags
+        document.querySelectorAll('link[href*="fonts.googleapis.com"], link[href*="fonts.gstatic.com"], link[href*="use.typekit.net"]').forEach(link => {
+            let source = 'Theme Settings';
+            if (link.id) {
+                source = link.id.replace(/-css$/, '').replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            }
+            detectedFonts[link.href] = source;
+        });
+
+        // Scan Performance API
+        const resources = performance.getEntriesByType('resource');
+        resources.forEach(res => {
+            if (res.name.includes('fonts.googleapis.com') || res.name.includes('fonts.gstatic.com') || res.name.includes('use.typekit.net')) {
+                if (!detectedFonts[res.name]) {
+                    detectedFonts[res.name] = 'Hidden in Theme or CSS'; 
+                }
+            }
+        });
+
+        const fontUrls = Object.keys(detectedFonts);
+
+        if (fontUrls.length > 0) {
+            fontContainer.style.display = 'block';
+            fontList.innerHTML = '';
+            
+            fontUrls.forEach(url => {
+                const li = document.createElement('li');
+                li.style.borderLeftColor = '#ffcc00';
+                li.style.marginBottom = '6px';
+                li.style.paddingBottom = '6px';
+                li.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+                
+                const provider = url.includes('typekit') ? 'Adobe Fonts' : 'Google Fonts';
+                const source = detectedFonts[url];
+                
+                let displayUrl = url;
+                if (displayUrl.length > 40) displayUrl = displayUrl.substring(0, 37) + '...';
+
+                // Smart Font Name Extraction ---
+                let fontNames = "these fonts";
+                if (url.includes('family=')) {
+                    // Extract from Google Fonts CSS API (e.g. family=Open+Sans:wght@400)
+                    const matches = [...url.matchAll(/family=([^&:]+)/g)];
+                    if (matches.length > 0) {
+                        fontNames = [...new Set(matches.map(m => m[1].replace(/\+/g, ' ')))].join(', ');
+                    }
+                } else if (url.includes('gstatic.com/s/')) {
+                    // Extract from direct font file URL (e.g. /s/questrial/v19/...)
+                    const match = url.match(/\/s\/([^\/]+)\//);
+                    if (match && match[1]) {
+                        fontNames = match[1].replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    }
+                } else if (url.includes('typekit')) {
+                    fontNames = "this Adobe font kit";
+                }
+                // ---------------------------------------
+
+                li.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <strong style="color: #ffcc00;">${provider}</strong>
+                        <span style="font-size: 9px; background: rgba(161, 85, 255, 0.2); color: #a155ff; padding: 2px 6px; border-radius: 4px; text-align: right; line-height: 1.2;">Source: ${source}</span>
+                    </div>
+                    <span style="font-size:10px; color:#a7aaad;" title="${url}">${displayUrl}</span>
+                    <span style="font-size:10px; color:#00d2ff; display:block; margin-top:3px;">Fix: Download <strong>${fontNames}</strong> and host locally via Theme/Builder settings.</span>
+                `;
+                fontList.appendChild(li);
+            });
+        }
+    }
+
+    // Dead Asset Radar
+    function scanDeadAssets() {
+        const container = document.getElementById('corepulse-hud-dead-container');
+        const list = document.getElementById('corepulse-hud-dead-list');
+        if (!container || !list) return;
+
+        let deadAssets = [];
+        
+        // Retroactively find broken images that 404'd
+        document.querySelectorAll('img').forEach(img => {
+            if (img.complete && img.naturalHeight === 0 && img.src && !img.src.includes('data:image')) {
+                deadAssets.push(img.src);
+            }
+        });
+
+        if (deadAssets.length > 0) {
+            container.style.display = 'block';
+            list.innerHTML = '';
+            deadAssets.forEach(src => {
+                const li = document.createElement('li');
+                li.style.borderLeftColor = '#ff4444';
+                li.innerHTML = `
+                    <strong style="color: #ff4444;">Broken Image (404)</strong><br>
+                    <span style="font-size:11px; color:#a7aaad; word-break:break-all;">${src}</span>
+                `;
+                list.appendChild(li);
+            });
+        }
     }
 
     function trackLCP() {
@@ -239,6 +377,130 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
+    function scanBlameGame() {
+        const blameList = document.getElementById('corepulse-blame-list');
+        if (!blameList || !window.corePulseData || !window.corePulseData.blame_game) return;
+
+        const blameData = window.corePulseData.blame_game;
+        blameList.innerHTML = '';
+
+        if (blameData.length > 0) {
+            blameData.forEach(item => {
+                if (item.kb > 0) {
+                    const li = document.createElement('li');
+                    li.style.display = 'flex';
+                    li.style.justifyContent = 'space-between';
+                    li.style.padding = '5px 0';
+                    li.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+
+                    const kbColor = item.kb > 300 ? '#ff4444' : (item.kb > 150 ? '#ffcc00' : '#00ff00');
+
+                    li.innerHTML = `
+                        <span style="color: #f0f0f1; font-size: 12px;">${item.provider}</span>
+                        <strong style="color: ${kbColor}; font-size: 12px; font-weight: bold;">${item.kb} KB</strong>
+                    `;
+                    blameList.appendChild(li);
+                }
+            });
+        } else {
+            blameList.innerHTML = '<li style="color: #a7aaad; font-size: 11px;">No plugin data available.</li>';
+        }
+    }
+
+    // The Dependency Matrix Visualizer
+    function scanDependencies() {
+        const container = document.getElementById('corepulse-hud-dependency-container');
+        const tree = document.getElementById('corepulse-dependency-tree');
+        if (!container || !tree || !window.corePulseData) return;
+
+        const culprits = window.corePulseData.culprits || [];
+        
+        // Find "Foundation" scripts (ones that have branches relying on them)
+        const foundations = culprits.filter(c => c.dependents && c.dependents.length > 0);
+
+        if (foundations.length === 0) {
+            container.style.display = 'none';
+            return;
+        }
+
+        container.style.display = 'block';
+        tree.innerHTML = '';
+
+        // Sort by the heaviest relied-upon scripts first
+        foundations.sort((a, b) => b.dependents.length - a.dependents.length);
+
+        foundations.forEach(root => {
+            const rootExt = root.type === 'css' ? '.css' : '.js';
+            const rootColor = root.type === 'css' ? '#00d2ff' : '#f0f0f1';
+            
+            let html = `
+                <div style="margin-bottom: 15px; font-family: monospace;">
+                    <div style="display: flex; align-items: center; color: ${rootColor}; font-size: 11px; font-weight: bold;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#a155ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                        ${root.handle}${rootExt}
+                        <span style="background: rgba(161,85,255,0.2); color: #a155ff; padding: 2px 6px; border-radius: 10px; font-size: 9px; margin-left: 8px;">${root.dependents.length} Child Scripts</span>
+                    </div>
+                    <div style="margin-left: 5px; border-left: 1px dashed #3c434a; padding-left: 12px; margin-top: 6px;">
+            `;
+
+            // Draw the branches
+            root.dependents.forEach((dep, index) => {
+                const isLast = index === root.dependents.length - 1;
+                const branchSymbol = isLast ? '└──' : '├──';
+                html += `
+                    <div style="color: #a7aaad; font-size: 10px; margin-bottom: 4px; display: flex; align-items: center;">
+                        <span style="color: #646970; margin-right: 8px; font-weight: bold;">${branchSymbol}</span> ${dep}
+                    </div>
+                `;
+            });
+
+            html += `</div></div>`;
+            tree.innerHTML += html;
+        });
+    }
+
+    // Render Slow Queries
+    function scanQueries() {
+        const sqlList = document.getElementById('corepulse-sql-list');
+        if (!sqlList || !window.corePulseData) return;
+
+        sqlList.innerHTML = '';
+        const { slow_queries, savequeries } = window.corePulseData;
+
+        if (!savequeries) {
+            sqlList.innerHTML = '<li style="font-size: 11px; color: #a7aaad; line-height: 1.4;">Tracking inactive. Add <code>define("SAVEQUERIES", true);</code> to wp-config.php for deep SQL tracking.</li>';
+            return;
+        }
+
+        if (slow_queries && slow_queries.length > 0) {
+            slow_queries.forEach(q => {
+                const li = document.createElement('li');
+                li.style.padding = '10px 0';
+                li.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+                
+                // Color code the execution time (Red if over 50ms, Yellow if over 10ms)
+                const timeColor = q.time > 50 ? '#ff4444' : (q.time > 10 ? '#ffcc00' : '#00ff00');
+
+                li.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+                        <div style="min-width: 0; flex: 1; margin-right: 10px;">
+                            <span style="display: inline-block; max-width: 100%; font-size: 9px; color: #a155ff; font-family: monospace; background: rgba(161, 85, 255, 0.1); padding: 3px 6px; border-radius: 4px; border: 1px solid rgba(161, 85, 255, 0.2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: top;" title="${q.caller}">
+                                ${q.caller}
+                            </span>
+                        </div>
+                        <strong style="color: ${timeColor}; font-size: 11px; white-space: nowrap; flex-shrink: 0; margin-top: 2px;">${q.time} ms</strong>
+                    </div>
+                    <div style="font-size: 10px; color: #a7aaad; font-family: monospace; word-break: break-all; line-height: 1.5; padding-left: 2px;">
+                        ${q.query}
+                    </div>
+                `;
+                sqlList.appendChild(li);
+            });
+        } else {
+            sqlList.innerHTML = '<li style="font-size: 11px; color: #00ff00;">Database is lightning fast. No slow queries detected!</li>';
+        }
+    }
+
     function updateUI(weight, cssWeight, hasHydrationError) {
         if (!scoreElement || !iconElement || !window.corePulseData) return;
         const settings = window.corePulseData.settings;
@@ -251,12 +513,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (hudWeight) hudWeight.innerText = weight + ' KB';
         if (hudCssWeight) hudCssWeight.innerText = cssWeight + ' KB';
 
-        // Clear existing status classes on the floating node
         if (floatNode) {
             floatNode.classList.remove('corepulse-status-error', 'corepulse-status-danger', 'corepulse-status-warning');
         }
 
-        // Apply visual budget alerts
         if (hasHydrationError) {
             scoreElement.innerText += ' (Error)';
             scoreElement.style.color = '#a155ff'; 
@@ -309,7 +569,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (culprit.url && culprit.url !== '') {
                         const btnClass = isPreloaded ? 'corepulse-btn-boost active' : 'corepulse-btn-boost';
                         const btnText = isPreloaded ? 'BOOSTED' : 'BOOST';
-                        btnHtml = `<button class="corepulse-kill-toggle ${btnClass}" data-url="${culprit.url}" data-type="${culprit.type}">${btnText}</button>`;
+                        btnHtml = `<button class="corepulse-kill-toggle ${btnClass}" data-url="${culprit.url}" data-type="${culprit.type}" style="margin-right: 5px;">${btnText}</button>`;
                     }
 
                     const deps = culprit.dependents || [];
@@ -321,19 +581,34 @@ document.addEventListener('DOMContentLoaded', () => {
                         depsData = deps.join(',');
                     }
 
+                    let protectionHtml = '';
+                    let killBtnHtml = '';
+                    
+                    if (culprit.protection_level === 'unstoppable') {
+                        protectionHtml = `<span style="color:#ff4444; font-size:10px; margin-left:6px;" title="Critical Core Asset"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg> Protected</span>`;
+                        killBtnHtml = `<button class="corepulse-kill-toggle corepulse-btn-kill" disabled style="opacity: 0.3; cursor: not-allowed;" title="Cannot kill critical core files.">Kill</button>`;
+                    } else if (culprit.protection_level === 'warning') {
+                        protectionHtml = `<span style="color:#ffcc00; font-size:10px; margin-left:6px;" title="Native WP Asset"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg> Warning</span>`;
+                        killBtnHtml = `<button class="corepulse-kill-toggle corepulse-btn-kill" data-handle="${culprit.handle}" data-dependents="${depsData}">Kill</button>`;
+                    } else {
+                        killBtnHtml = `<button class="corepulse-kill-toggle corepulse-btn-kill" data-handle="${culprit.handle}" data-dependents="${depsData}">Kill</button>`;
+                    }
+
                     const li = document.createElement('li');
                     li.style.display = 'flex'; li.style.justifyContent = 'space-between'; li.style.alignItems = 'center';
                     li.innerHTML = `
                         <div>
                             <strong style="color: ${nameColor};">${culprit.handle}${ext}</strong>
-                            <span class="corepulse-size-badge">${culprit.size}</span>
+                            ${protectionHtml}
+                            <br>
+                            <span class="corepulse-size-badge" style="margin-left:0;">${culprit.size}</span>
                             ${depsHtml}
                             ${providerHtml}
                             <span style="font-size: 11px; color: #a7aaad; display:block; margin-top:2px;">${culprit.suggestion}</span>
                         </div>
-                        <div style="display:flex; flex-shrink:0;">
+                        <div style="display:flex; flex-shrink:0; align-items:center;">
                             ${btnHtml}
-                            <button class="corepulse-kill-toggle corepulse-btn-kill" data-handle="${culprit.handle}" data-dependents="${depsData}">Kill</button>
+                            ${killBtnHtml}
                         </div>
                     `;
                     hudCulprits.appendChild(li);
@@ -383,8 +658,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 hudGraveyardList.innerHTML = '';
                 killedHandles.forEach(handle => {
                     const ruleData = killedData[handle];
-                    
-                    // FIXED: Check if the specific script is real or simulated and pass data attribute to button
                     const isSimulated = ruleData.rule === 'Simulated (Dry Run)';
                     const ruleText = isSimulated ? 'Simulated (Dry Run)' : (ruleData.rule === 'everywhere' ? 'Global Block' : (ruleData.rule === 'only' ? 'Blocked on this page' : 'Blocked on other pages'));
                     
@@ -403,11 +676,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 hudGraveyardContainer.style.display = 'none';
             }
         }
+        
+        // Trigger all scanners
+        scanDependencies();
+        scanQueries();
+        scanBlameGame(); 
         scanWCAG();
         scanHeavyMedia(); 
+        scanExternalFonts();
+        scanDeadAssets();
     }
 
     document.addEventListener('click', (e) => {
+        const purgeBtn = e.target.closest('#corepulse-purge-transients');
         const adminBtn = e.target.closest('#wp-admin-bar-corepulse-status');
         const floatBtn = e.target.closest('#corepulse-floating-trigger'); 
         const closeBtn = e.target.closest('#corepulse-hud-close');
@@ -419,9 +700,39 @@ document.addEventListener('DOMContentLoaded', () => {
         const emergencyBtn = e.target.closest('#corepulse-emergency-restore-btn');
         const traceBtn = e.target.closest('.corepulse-wcag-trace-btn');
         const exportBtn = e.target.closest('#corepulse-export-btn');
+        const copyReportBtn = e.target.closest('#corepulse-copy-report-btn');
+        const dbScanBtn = e.target.closest('#corepulse-run-db-scan'); 
         const hud = document.getElementById('corepulse-hud');
         const sniperModal = document.getElementById('corepulse-sniper-modal');
 
+        if (purgeBtn) {
+            e.preventDefault();
+            purgeBtn.innerText = '...';
+            purgeBtn.style.pointerEvents = 'none';
+
+            const formData = new URLSearchParams();
+            formData.append('action', 'corepulse_purge_transients');
+            formData.append('security', window.corepulse_ajax.nonce);
+
+            fetch(window.corepulse_ajax.url, { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(response => {
+                if (response.success) {
+                    const transEl = document.getElementById('corepulse-db-transients');
+                    if (transEl) {
+                        transEl.innerText = '0';
+                        transEl.style.color = '#00ff00';
+                    }
+                    purgeBtn.innerText = 'Purged';
+                    purgeBtn.style.color = '#00ff00';
+                    purgeBtn.style.borderColor = '#00ff00';
+                    purgeBtn.style.background = 'rgba(0, 255, 0, 0.1)';
+                } else {
+                    purgeBtn.innerText = 'Failed';
+                }
+            });
+        }
+        
         if (adminBtn || floatBtn) {
             if (hud) {
                 e.preventDefault(); 
@@ -433,6 +744,38 @@ document.addEventListener('DOMContentLoaded', () => {
         if (closeBtn && hud) {
             e.preventDefault();
             hud.classList.remove('corepulse-hud-active');
+        }
+
+        // Copy Autopsy Report Logic
+        if (copyReportBtn) {
+            e.preventDefault();
+            const domNodes = document.getElementById('corepulse-hud-dom') ? document.getElementById('corepulse-hud-dom').innerText : 'N/A';
+            const jsPayload = document.getElementById('corepulse-hud-weight') ? document.getElementById('corepulse-hud-weight').innerText : 'N/A';
+            const cssPayload = document.getElementById('corepulse-hud-css-weight') ? document.getElementById('corepulse-hud-css-weight').innerText : 'N/A';
+            const ttfb = document.getElementById('corepulse-hud-ttfb') ? document.getElementById('corepulse-hud-ttfb').innerText : 'N/A';
+            const dbAutoload = document.getElementById('corepulse-db-autoload') ? document.getElementById('corepulse-db-autoload').innerText : 'Run Scan First';
+            
+            let heaviestPlugin = 'None';
+            const firstPlugin = document.querySelector('#corepulse-blame-list li strong');
+            if (firstPlugin) heaviestPlugin = firstPlugin.parentElement.innerText.replace(/\n/g, ' - ').replace('Plugin: ', '');
+
+            const reportText = `CorePulse Autopsy Report\n` +
+                               `--------------------------\n` +
+                               `TTFB: ${ttfb}\n` +
+                               `JS Payload: ${jsPayload}\n` +
+                               `CSS Payload: ${cssPayload}\n` +
+                               `DOM Nodes: ${domNodes}\n` +
+                               `Heaviest Plugin: ${heaviestPlugin}\n` +
+                               `DB Autoload Bloat: ${dbAutoload}\n` +
+                               `--------------------------\n` +
+                               `Generated by CorePulse`;
+
+            navigator.clipboard.writeText(reportText).then(() => {
+                const originalHtml = copyReportBtn.innerHTML;
+                copyReportBtn.innerHTML = `<span style="font-size:10px; color:#00ff00; font-weight:bold; letter-spacing: 0.5px;">COPIED</span>`;
+                copyReportBtn.style.border = 'none';
+                setTimeout(() => { copyReportBtn.innerHTML = originalHtml; copyReportBtn.style.border = ''; }, 2500);
+            });
         }
 
         if (boostBtn) {
@@ -454,6 +797,64 @@ document.addEventListener('DOMContentLoaded', () => {
                     sessionStorage.setItem('corepulse_hud_open', 'true');
                     window.location.reload(); 
                 }
+            });
+        }
+
+        if (dbScanBtn) {
+            e.preventDefault();
+            dbScanBtn.innerText = 'Scanning wp_options...';
+            dbScanBtn.style.opacity = '0.7';
+            dbScanBtn.style.pointerEvents = 'none';
+
+            const formData = new URLSearchParams();
+            formData.append('action', 'corepulse_scan_database');
+            formData.append('security', window.corepulse_ajax.nonce);
+
+            fetch(window.corepulse_ajax.url, { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(response => {
+                dbScanBtn.style.display = 'none'; 
+                const resultsContainer = document.getElementById('corepulse-db-results');
+                const autoloadEl = document.getElementById('corepulse-db-autoload');
+                const transientsEl = document.getElementById('corepulse-db-transients');
+                const heavyList = document.getElementById('corepulse-db-heavy-list');
+
+                if (response.success) {
+                    resultsContainer.style.display = 'block';
+                    
+                    const autoloadKb = response.data.autoload_kb;
+                    autoloadEl.innerText = autoloadKb + ' KB';
+                    if (autoloadKb > 800) autoloadEl.style.color = '#ff4444'; 
+                    else if (autoloadKb > 400) autoloadEl.style.color = '#ffcc00';
+
+                    transientsEl.innerText = response.data.transients;
+
+                    heavyList.innerHTML = '<li style="font-size: 10px; color: #00d2ff; margin-bottom: 5px; text-transform: uppercase;">Heaviest Database Rows:</li>';
+                    
+                    if (response.data.heavy_options.length > 0) {
+                        response.data.heavy_options.forEach(opt => {
+                            const li = document.createElement('li');
+                            li.style.display = 'flex';
+                            li.style.justifyContent = 'space-between';
+                            li.style.padding = '4px 0';
+                            li.innerHTML = `
+                                <span style="color: #f0f0f1; font-size: 11px; word-break: break-all; padding-right: 10px;" title="${opt.name}">${opt.name}</span>
+                                <strong style="color: #ffcc00; font-size: 11px; flex-shrink: 0;">${opt.kb} KB</strong>
+                            `;
+                            heavyList.appendChild(li);
+                        });
+                    } else {
+                        heavyList.innerHTML += '<li style="font-size: 11px; color: #00ff00;">Database is clean! No massive rows detected.</li>';
+                    }
+                } else {
+                    dbScanBtn.innerText = 'Scan Failed - Try Again';
+                    dbScanBtn.style.opacity = '1';
+                    dbScanBtn.style.pointerEvents = 'auto';
+                }
+            }).catch(() => {
+                dbScanBtn.innerText = 'Network Error - Try Again';
+                dbScanBtn.style.opacity = '1';
+                dbScanBtn.style.pointerEvents = 'auto';
             });
         }
 
@@ -483,15 +884,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 targets = Array.from(rawImages).filter(img => !img.closest('#wpadminbar') && !img.closest('#corepulse-hud'));
             }
             else if (type === 'input') {
-                const rawInputs = document.querySelectorAll('input:not([type="hidden"]):not([type="submit"]):not([aria-label]):not([aria-labelledby])');
-                targets = Array.from(rawInputs).filter(i => {
-                    if (i.closest('#wpadminbar') || i.closest('#corepulse-hud')) return false;
-                    return !i.id || !document.querySelector(`label[for="${i.id}"]`);
-                });
+                targets = Array.from(document.querySelectorAll('.corepulse-unlabelled-offender'));
             }
             else if (type === 'lcp') {
                 const lcpNode = document.querySelector('#corepulse-lcp-target');
                 if (lcpNode) targets = [lcpNode];
+            }
+            else if (type === 'tabindex') {
+                const positiveTabIndex = document.querySelectorAll('[tabindex]:not([tabindex="0"]):not([tabindex="-1"])');
+                targets = Array.from(positiveTabIndex).filter(el => !el.closest('#wpadminbar') && !el.closest('#corepulse-hud'));
+            }
+            else if (type === 'empty-interactive') {
+                const emptyInteractives = document.querySelectorAll('button:empty:not([aria-label]), a:empty:not([aria-label])');
+                targets = Array.from(emptyInteractives).filter(el => !el.closest('#wpadminbar') && !el.closest('#corepulse-hud'));
             }
 
             if (targets.length > 0) {
@@ -499,10 +904,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 targets[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
                 setTimeout(() => { targets.forEach(el => el.classList.remove('corepulse-trace-highlight')); }, 20000);
                 if (hud) hud.classList.remove('corepulse-hud-active');
+            } else {
+                alert("The elements are structurally hidden (0px) and cannot be highlighted.");
             }
         }
 
-        if (killBtn) {
+        if (killBtn && !killBtn.disabled) {
             e.preventDefault();
             currentSniperTarget = killBtn.getAttribute('data-handle');
             document.getElementById('corepulse-sniper-target').innerText = currentSniperTarget;
@@ -571,15 +978,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (reviveBtn) {
             e.preventDefault();
             const handle = reviveBtn.getAttribute('data-handle');
-            
-            // Verify if we are dealing with a simulated script or a real one
             const isSimulatedTarget = reviveBtn.getAttribute('data-simulated') === 'true';
 
             reviveBtn.innerText = '...';
             reviveBtn.style.opacity = '0.5';
 
             if (isSimulatedTarget) {
-                // Remove from URL params if it is simulated
                 const urlParams = new URLSearchParams(window.location.search);
                 let currentTargets = urlParams.get('cp_target') ? urlParams.get('cp_target').split(',') : [];
                 currentTargets = currentTargets.filter(t => t !== handle);
@@ -590,7 +994,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // If it's a real kill, hit the database via AJAX regardless of SIM status
             const formData = new URLSearchParams();
             formData.append('action', 'corepulse_toggle_script');
             formData.append('handle', handle);
@@ -717,29 +1120,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// v1.2.0: Historical Pulse Logs Beacon
-    setTimeout(() => {
-        if (!window.corepulse_ajax || !window.corePulseData) return;
+// Historical Pulse Logs Beacon
+setTimeout(() => {
+    if (!window.corepulse_ajax || !window.corePulseData) return;
 
-        const ttfbText = document.getElementById('corepulse-hud-ttfb')?.innerText || '0';
-        const inpText  = document.getElementById('corepulse-hud-inp')?.innerText || '0';
-        const clsText  = document.getElementById('corepulse-hud-cls')?.innerText || '0';
+    const ttfbEl = document.getElementById('corepulse-hud-ttfb');
+    const inpEl  = document.getElementById('corepulse-hud-inp');
+    const clsEl  = document.getElementById('corepulse-hud-cls');
 
-        const formData = new URLSearchParams();
-        formData.append('action', 'corepulse_log_vitals');
-        formData.append('js_kb', window.corePulseData.weight || 0);
-        formData.append('css_kb', window.corePulseData.css_weight || 0);
-        formData.append('ttfb', parseInt(ttfbText));
-        formData.append('inp', parseInt(inpText));
-        formData.append('cls', parseFloat(clsText));
-        formData.append('url', window.location.pathname);
-        formData.append('security', window.corepulse_ajax.nonce);
+    const ttfbText = ttfbEl ? ttfbEl.innerText : '0';
+    const inpText  = inpEl ? inpEl.innerText : '0';
+    const clsText  = clsEl ? clsEl.innerText : '0';
 
-        // Send payload quietly in the background
-        fetch(window.corepulse_ajax.url, { 
-            method: 'POST', 
-            body: formData,
-            keepalive: true 
-        }).catch(() => {}); // Ignore errors so it never bothers the user
-        
-    }, 5000); // Wait 5 seconds after load so we don't block rendering
+    const formData = new URLSearchParams();
+    formData.append('action', 'corepulse_log_vitals');
+    formData.append('js_kb', window.corePulseData.weight || 0);
+    formData.append('css_kb', window.corePulseData.css_weight || 0);
+    formData.append('ttfb', parseInt(ttfbText));
+    formData.append('inp', parseInt(inpText));
+    formData.append('cls', parseFloat(clsText));
+    formData.append('url', window.location.pathname);
+    formData.append('security', window.corepulse_ajax.nonce);
+
+    fetch(window.corepulse_ajax.url, { 
+        method: 'POST', 
+        body: formData,
+        keepalive: true 
+    }).catch(() => {});
+}, 5000);

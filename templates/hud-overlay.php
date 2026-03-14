@@ -13,7 +13,8 @@
             Asset Autopsy
         </h3>
         
-        <div class="corepulse-io-tools">
+        <div class="corepulse-io-tools" style="display: flex; align-items: center; gap: 8px;">
+            <button id="corepulse-copy-report-btn" title="Copy Autopsy Report to Clipboard" style="background: transparent; border: none; padding: 0; color: #a7aaad; cursor: pointer; display: flex; align-items: center; justify-content: center;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
             <button id="corepulse-export-btn" title="Export Sniper Rules"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>
             <label for="corepulse-import-file" id="corepulse-import-btn" title="Import Sniper Rules"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg></label>
             <input type="file" id="corepulse-import-file" accept=".json" style="display: none;">
@@ -100,7 +101,77 @@
             </h4>
             <ul id="corepulse-hud-lcp-list"></ul>
         </div>
+
+        <div class="corepulse-issues" id="corepulse-hud-fonts-container" style="display: none;">
+            <h4>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffcc00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom; margin-right: 5px;">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                Privacy Guard
+            </h4>
+            <ul id="corepulse-hud-fonts-list"></ul>
+        </div>
+
+        <div class="corepulse-issues" id="corepulse-hud-dead-container" style="display: none;">
+            <h4>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom; margin-right: 5px;">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                </svg>
+                Dead Asset Radar
+            </h4>
+            <ul id="corepulse-hud-dead-list"></ul>
+        </div>
         
+        <div class="corepulse-hud-section" style="margin-top: 15px; margin-bottom: 15px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 0 6px 6px 0; border-left: 3px solid #ffcc00;">
+            <h4 style="margin: 0 0 12px 0; color: #ffcc00; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; font-family: 'Questrial', sans-serif !important; display: flex; align-items: center;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+                    <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                Query Autopsy (Slow SQL)
+            </h4>
+            <ul id="corepulse-sql-list" style="list-style: none; margin: 0; padding: 0;"></ul>
+        </div>
+
+        <div class="corepulse-hud-section" style="margin-top: 15px; margin-bottom: 15px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 0 6px 6px 0; border-left: 3px solid #a155ff;">
+            <h4 style="margin: 0 0 12px 0; color: #a155ff; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; font-family: 'Questrial', sans-serif !important; display: flex; align-items: center;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+                    <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                    <polyline points="2 17 12 22 22 17"></polyline>
+                    <polyline points="2 12 12 17 22 12"></polyline>
+                </svg>
+                Plugin Profiler
+            </h4>
+            <ul id="corepulse-blame-list" style="list-style: none; margin: 0; padding: 0;"></ul>
+        </div>
+
+        <div class="corepulse-hud-section" style="margin-top: 15px; margin-bottom: 15px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 0 6px 6px 0; border-left: 3px solid #00d2ff;">
+            <h4 style="margin: 0 0 12px 0; color: #00d2ff; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; font-family: 'Questrial', sans-serif !important; display: flex; align-items: center;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+                    <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                    <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+                    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+                </svg>
+                Database Autopsy
+            </h4>
+            
+            <div id="corepulse-db-results" style="display: none; margin-bottom: 10px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span style="font-size: 11px; color: #a7aaad;" title="Total size of all options loading on every page. Keep under 800KB.">Autoloaded Bloat:</span>
+                    <strong id="corepulse-db-autoload" style="font-size: 11px; color: #f0f0f1;">0 KB</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-size: 11px; color: #a7aaad;" title="Temporary database rows that may be orphaned.">Active Transients:</span>
+                    <div>
+                        <strong id="corepulse-db-transients" style="font-size: 11px; color: #f0f0f1; margin-right: 6px;">0</strong>
+                        <button id="corepulse-purge-transients" style="background: rgba(255, 68, 68, 0.1); border: 1px solid #ff4444; color: #ff4444; border-radius: 3px; font-size: 9px; padding: 2px 6px; cursor: pointer; text-transform: uppercase;">Purge</button>
+                    </div>
+                </div>
+                <ul id="corepulse-db-heavy-list" style="list-style: none; margin: 10px 0 0 0; padding: 0; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px;"></ul>
+            </div>
+            
+            <button id="corepulse-run-db-scan" style="width: 100%; text-align: center; margin-top: 10px; padding: 8px; font-size: 11px; background: rgba(0, 210, 255, 0.1); border: 1px solid #00d2ff; color: #00d2ff; border-radius: 4px; cursor: pointer; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">Run Backend Scan</button>
+        </div>
+
         <div class="corepulse-issues">
             <h4>
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffcc00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom; margin-right: 5px;">
@@ -111,6 +182,20 @@
                 Local Culprits
             </h4>
             <ul id="corepulse-hud-culprits"></ul>
+        </div>
+
+        <div class="corepulse-issues" id="corepulse-hud-dependency-container" style="display: none;">
+            <h4>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a155ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom; margin-right: 5px;">
+                    <circle cx="18" cy="5" r="3"></circle>
+                    <circle cx="6" cy="12" r="3"></circle>
+                    <circle cx="18" cy="19" r="3"></circle>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                </svg>
+                Dependency Matrix
+            </h4>
+            <div id="corepulse-dependency-tree" style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 6px; border: 1px solid #3c434a; margin-top: 10px;"></div>
         </div>
 
         <div class="corepulse-issues" id="corepulse-hud-media-container" style="display: none;">

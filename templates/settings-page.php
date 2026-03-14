@@ -21,7 +21,7 @@ if ( isset( $_POST['corepulse_clear_logs'], $_POST['corepulse_clear_logs_nonce']
         settings_fields( 'corepulse_options_group' );
         do_settings_sections( 'corepulse_options_group' );
         
-        // Fetch current values (with defaults) - PREFIXED for strict WP standards
+        // Fetch current values (with defaults)
         $corepulse_js_warn     = get_option( 'corepulse_js_warning', 200 );
         $corepulse_js_danger   = get_option( 'corepulse_js_danger', 500 );
         $corepulse_css_warn    = get_option( 'corepulse_css_warning', 150 );
@@ -104,7 +104,7 @@ if ( isset( $_POST['corepulse_clear_logs'], $_POST['corepulse_clear_logs_nonce']
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2271b1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;">
                     <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
                 </svg>
-                Historical Pulse Logs
+                Historical Pulse Logs (ROI Dashboard)
             </h2>
             <p style="margin-top: 5px; margin-bottom: 0;">Your site's most recent Web Vitals snapshots. Automatically captured 5 seconds after page load.</p>
         </div>
@@ -126,10 +126,99 @@ if ( isset( $_POST['corepulse_clear_logs'], $_POST['corepulse_clear_logs_nonce']
             <p style="margin: 0;"><strong>No logs yet.</strong> Browse your frontend pages to start collecting performance snapshots.</p>
         </div>
     <?php else : 
-        // Reverse array to show newest logs first
+        // Order oldest to newest for the chart
+        $corepulse_chart_data = array_values( $corepulse_history ); 
+        $corepulse_labels = array();
+        $corepulse_ttfb_points = array();
+        $corepulse_js_points = array();
+
+        foreach( $corepulse_chart_data as $corepulse_log_item ) {
+            // Keep labels clean (just the path, e.g., "/", "/about")
+            $corepulse_path = wp_parse_url( $corepulse_log_item['url'], PHP_URL_PATH );
+            $corepulse_labels[] = $corepulse_log_item['date'] . ' - ' . ( $corepulse_path ? $corepulse_path : '/' );
+            $corepulse_ttfb_points[] = $corepulse_log_item['ttfb'];
+            $corepulse_js_points[] = $corepulse_log_item['js_kb'];
+        }
+
+        // Reverse array to show newest logs first in the HTML Table
         $corepulse_history = array_reverse( $corepulse_history ); 
     ?>
-        <table class="wp-list-table widefat fixed striped" style="margin-top: 15px;">
+
+        <div style="margin-top: 20px; background: #1d2327; padding: 20px; border-radius: 8px; border: 1px solid #3c434a; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+            <canvas id="corepulse-vitals-chart" height="80"></canvas>
+        </div>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const ctx = document.getElementById('corepulse-vitals-chart').getContext('2d');
+                
+                // Injecting PHP Arrays into JavaScript
+                const labels = <?php echo wp_json_encode($corepulse_labels); ?>;
+                const ttfbData = <?php echo wp_json_encode($corepulse_ttfb_points); ?>;
+                const jsData = <?php echo wp_json_encode($corepulse_js_points); ?>;
+
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'TTFB (ms)',
+                                data: ttfbData,
+                                borderColor: '#ffcc00',
+                                backgroundColor: 'rgba(255, 204, 0, 0.1)',
+                                borderWidth: 3,
+                                pointBackgroundColor: '#1d2327',
+                                pointBorderColor: '#ffcc00',
+                                pointRadius: 4,
+                                tension: 0.3,
+                                yAxisID: 'y'
+                            },
+                            {
+                                label: 'JS Payload (KB)',
+                                data: jsData,
+                                borderColor: '#00d2ff',
+                                backgroundColor: 'rgba(0, 210, 255, 0.1)',
+                                borderWidth: 3,
+                                borderDash: [5, 5],
+                                pointBackgroundColor: '#1d2327',
+                                pointBorderColor: '#00d2ff',
+                                pointRadius: 4,
+                                tension: 0.3,
+                                yAxisID: 'y1'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            legend: { labels: { color: '#f0f0f1', font: { family: 'monospace', size: 12 } } },
+                            tooltip: { backgroundColor: 'rgba(0,0,0,0.8)', titleFont: { family: 'monospace' }, bodyFont: { family: 'monospace' } }
+                        },
+                        scales: {
+                            x: {
+                                grid: { color: 'rgba(255,255,255,0.05)' },
+                                ticks: { color: '#a7aaad', maxTicksLimit: 10, font: { size: 10 } }
+                            },
+                            y: {
+                                type: 'linear', display: true, position: 'left',
+                                title: { display: true, text: 'Time (ms)', color: '#ffcc00' },
+                                grid: { color: 'rgba(255,255,255,0.05)' },
+                                ticks: { color: '#a7aaad' }
+                            },
+                            y1: {
+                                type: 'linear', display: true, position: 'right',
+                                title: { display: true, text: 'Payload (KB)', color: '#00d2ff' },
+                                grid: { drawOnChartArea: false },
+                                ticks: { color: '#a7aaad' }
+                            }
+                        }
+                    }
+                });
+            });
+        </script>
+        <table class="wp-list-table widefat fixed striped" style="margin-top: 20px;">
             <thead>
                 <tr>
                     <th>Date</th>
