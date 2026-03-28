@@ -6,8 +6,10 @@
  * Version: 1.2.0
  * Author: Ssebuwufu Moses
  * Author URI: https://x.com/EduTechCenter
- * License: GPL2
+ * License: GPL-2.0-or-later
  * Text Domain: corepulse
+ * Requires at least: 6.2
+ * Requires PHP: 7.4
  */
 
 if ( ! defined( 'ABSPATH' ) ) exit;

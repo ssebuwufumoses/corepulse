@@ -39,7 +39,7 @@ class CorePulse_Database_Autopsy {
         $transients_count = $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->options} WHERE option_name LIKE '_transient_%'" );
 
         // Sort the heavy options from largest to smallest
-        usort($heavy_options, function($a, $b) { return $b['kb'] <=> $a['kb']; });
+        usort( $heavy_options, function( $a, $b ) { return $b['kb'] <=> $a['kb']; } );
 
         wp_send_json_success( array(
             'autoload_kb'   => round( $autoload_size / 1024, 1 ),

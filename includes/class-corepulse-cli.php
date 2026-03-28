@@ -13,7 +13,7 @@ class CorePulse_CLI {
      * * wp corepulse status
      */
     public function status( $args, $assoc_args ) {
-        WP_CLI::success( 'CorePulse v1.3.0 is active and running.' );
+        WP_CLI::success( 'CorePulse v1.2.0 is active and running.' );
         
         $killed_scripts = get_option( 'corepulse_killed_scripts', array() );
         $preloads       = get_option( 'corepulse_preloaded_assets', array() );

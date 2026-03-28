@@ -29,8 +29,10 @@ class CorePulse_Kill_Switch {
                 $targets = explode( ',', sanitize_text_field( wp_unslash( $_GET['cp_target'] ) ) );
                 foreach ( $targets as $handle ) {
                     $handle = trim( $handle );
-                    wp_dequeue_script( $handle ); wp_deregister_script( $handle );
-                    wp_dequeue_style( $handle ); wp_deregister_style( $handle );
+                    wp_dequeue_script( $handle );
+                    wp_deregister_script( $handle );
+                    wp_dequeue_style( $handle );
+                    wp_deregister_style( $handle );
                 }
             }
         }
@@ -42,22 +44,30 @@ class CorePulse_Kill_Switch {
             foreach ( $killed_scripts as $handle => $data ) {
                 
                 if ( is_numeric( $handle ) ) {
-                    wp_dequeue_script( $data ); wp_deregister_script( $data );
-                    wp_dequeue_style( $data ); wp_deregister_style( $data );
+                    wp_dequeue_script( $data );
+                    wp_deregister_script( $data );
+                    wp_dequeue_style( $data );
+                    wp_deregister_style( $data );
                     continue;
                 }
 
-                $rule = isset( $data['rule'] ) ? $data['rule'] : 'everywhere';
-                $locations = isset( $data['locations'] ) ? $data['locations'] : array();
+                $rule        = isset( $data['rule'] ) ? $data['rule'] : 'everywhere';
+                $locations   = isset( $data['locations'] ) ? $data['locations'] : array();
                 $should_kill = false;
 
-                if ( $rule === 'everywhere' ) $should_kill = true;
-                elseif ( $rule === 'only' && in_array( $current_id, $locations ) ) $should_kill = true;
-                elseif ( $rule === 'except' && ! in_array( $current_id, $locations ) ) $should_kill = true;
+                if ( 'everywhere' === $rule ) {
+                    $should_kill = true;
+                } elseif ( 'only' === $rule && in_array( $current_id, $locations, true ) ) {
+                    $should_kill = true;
+                } elseif ( 'except' === $rule && ! in_array( $current_id, $locations, true ) ) {
+                    $should_kill = true;
+                }
 
                 if ( $should_kill ) {
-                    wp_dequeue_script( $handle ); wp_deregister_script( $handle );
-                    wp_dequeue_style( $handle ); wp_deregister_style( $handle );
+                    wp_dequeue_script( $handle );
+                    wp_deregister_script( $handle );
+                    wp_dequeue_style( $handle );
+                    wp_deregister_style( $handle );
                 }
             }
         }
@@ -77,18 +87,21 @@ class CorePulse_Kill_Switch {
         
         $upgraded_scripts = array();
         foreach ( $killed_scripts as $key => $val ) {
-            if ( is_numeric( $key ) ) $upgraded_scripts[$val] = array( 'rule' => 'everywhere', 'locations' => array() );
-            else $upgraded_scripts[$key] = $val;
+            if ( is_numeric( $key ) ) {
+                $upgraded_scripts[ $val ] = array( 'rule' => 'everywhere', 'locations' => array() );
+            } else {
+                $upgraded_scripts[ $key ] = $val;
+            }
         }
         $killed_scripts = $upgraded_scripts;
 
-        if ( isset( $killed_scripts[$handle] ) && $rule === 'revive' ) {
+        if ( isset( $killed_scripts[ $handle ] ) && 'revive' === $rule ) {
             unset( $killed_scripts[$handle] );
             $status = 'revived';
         } else {
             $locations = array();
             if ( $rule !== 'everywhere' && $post_id > 0 ) $locations[] = $post_id;
-            $killed_scripts[$handle] = array( 'rule' => $rule, 'locations' => $locations );
+            $killed_scripts[ $handle ] = array( 'rule' => $rule, 'locations' => $locations );
             $status = 'killed';
         }
 

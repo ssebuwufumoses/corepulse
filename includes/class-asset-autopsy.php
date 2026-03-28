@@ -170,7 +170,7 @@ class CorePulse_Asset_Autopsy {
             }
         }
 
-        usort($culprits, function($a, $b) { return $b['bytes'] <=> $a['bytes']; });
+        usort( $culprits, function( $a, $b ) { return $b['bytes'] <=> $a['bytes']; } );
 
         // Format the Blame Game Matrix
         arsort( $blame_matrix );
@@ -228,9 +228,12 @@ class CorePulse_Asset_Autopsy {
             'hide_trigger' => (bool) get_option( 'corepulse_hide_floating_node', 0 )
         );
 
-        // Updated printf to output slow_queries and savequeries
-        printf(
-            '<script>window.corePulseData = { weight: %d, css_weight: %d, culprits: %s, rules: %s, settings: %s, preloads: %s, blame_game: %s, slow_queries: %s, savequeries: %s };</script>',
+        // Output corePulseData via WordPress script API so no raw <script> tag is echoed.
+        // calculate_payload_weights() runs at wp_footer priority 999, after WordPress has
+        // already printed footer scripts at priority 20, so we register a dedicated handle
+        // and call wp_print_scripts() immediately to flush it in place.
+        $inline_data = sprintf(
+            'window.corePulseData = { weight: %d, css_weight: %d, culprits: %s, rules: %s, settings: %s, preloads: %s, blame_game: %s, slow_queries: %s, savequeries: %s };',
             intval( $total_js_size ),
             intval( $total_css_size ),
             wp_json_encode( $culprits ),
@@ -241,6 +244,9 @@ class CorePulse_Asset_Autopsy {
             wp_json_encode( $slow_queries ),
             wp_json_encode( $savequeries_enabled )
         );
+        wp_register_script( 'corepulse-data', '', array( 'corepulse-js' ), '1.2.0', true );
+        wp_add_inline_script( 'corepulse-data', $inline_data );
+        wp_print_scripts( array( 'corepulse-data' ) );
         
         include COREPULSE_PATH . 'templates/hud-overlay.php';
     }

@@ -1,14 +1,14 @@
 === CorePulse ===
 Contributors: ssebuwufumoses
-Tags: performance, core web vitals, speed, accessibility, optimization, database cleaner, wp-cli, dequeue, asset manager
-Requires at least: 5.8
+Tags: performance, speed, optimization, database cleaner, asset manager
+Requires at least: 6.2
 Tested up to: 6.9
 Stable tag: 1.2.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-The enterprise server-centric performance engine. Surgically dequeue JS/CSS, map asset dependencies, track slow SQL queries, audit DOM depth, and purge database bloat in real-time.
+Developer performance engine: dequeue JS/CSS, map asset dependencies, track slow SQL queries, audit DOM depth, and purge database bloat.
 
 == Description ==
 

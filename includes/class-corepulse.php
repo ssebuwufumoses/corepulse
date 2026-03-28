@@ -79,11 +79,45 @@ class CorePulse {
      * Enqueue assets strictly for the backend settings page.
      */
     public function enqueue_admin_assets( $hook ) {
-        // Only load Chart.js on the CorePulse settings page to avoid conflicts
         if ( $hook !== 'settings_page_corepulse' ) {
             return;
         }
+
         wp_enqueue_script( 'corepulse-chart', COREPULSE_URL . 'assets/js/chart.min.js', array(), '4.4.1', true );
+
+        $history = get_option( 'corepulse_historical_logs', array() );
+        if ( ! empty( $history ) && is_array( $history ) ) {
+            $chart_data  = array_values( $history );
+            $labels      = array();
+            $ttfb_points = array();
+            $js_points   = array();
+
+            foreach ( $chart_data as $log_item ) {
+                $path        = wp_parse_url( $log_item['url'], PHP_URL_PATH );
+                $labels[]      = $log_item['date'] . ' - ' . ( $path ? $path : '/' );
+                $ttfb_points[] = $log_item['ttfb'];
+                $js_points[]   = $log_item['js_kb'];
+            }
+
+            $chart_init = sprintf(
+                'document.addEventListener("DOMContentLoaded",function(){' .
+                'var el=document.getElementById("corepulse-vitals-chart");if(!el)return;' .
+                'new Chart(el.getContext("2d"),{type:"line",data:{labels:%s,datasets:[' .
+                '{label:"TTFB (ms)",data:%s,borderColor:"#ffcc00",backgroundColor:"rgba(255,204,0,0.1)",borderWidth:3,pointBackgroundColor:"#1d2327",pointBorderColor:"#ffcc00",pointRadius:4,tension:0.3,yAxisID:"y"},' .
+                '{label:"JS Payload (KB)",data:%s,borderColor:"#00d2ff",backgroundColor:"rgba(0,210,255,0.1)",borderWidth:3,borderDash:[5,5],pointBackgroundColor:"#1d2327",pointBorderColor:"#00d2ff",pointRadius:4,tension:0.3,yAxisID:"y1"}' .
+                ']},options:{responsive:true,interaction:{mode:"index",intersect:false},' .
+                'plugins:{legend:{labels:{color:"#f0f0f1",font:{family:"monospace",size:12}}},' .
+                'tooltip:{backgroundColor:"rgba(0,0,0,0.8)",titleFont:{family:"monospace"},bodyFont:{family:"monospace"}}},' .
+                'scales:{x:{grid:{color:"rgba(255,255,255,0.05)"},ticks:{color:"#a7aaad",maxTicksLimit:10,font:{size:10}}},' .
+                'y:{type:"linear",display:true,position:"left",title:{display:true,text:"Time (ms)",color:"#ffcc00"},grid:{color:"rgba(255,255,255,0.05)"},ticks:{color:"#a7aaad"}},' .
+                'y1:{type:"linear",display:true,position:"right",title:{display:true,text:"Payload (KB)",color:"#00d2ff"},grid:{drawOnChartArea:false},ticks:{color:"#a7aaad"}}}}});});',
+                wp_json_encode( $labels ),
+                wp_json_encode( $ttfb_points ),
+                wp_json_encode( $js_points )
+            );
+
+            wp_add_inline_script( 'corepulse-chart', $chart_init );
+        }
     }
 
     /**

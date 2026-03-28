@@ -35,15 +35,15 @@ class CorePulse_Admin_Bar {
 
     public function enqueue_pulse_assets() {
         if ( is_admin_bar_showing() && current_user_can( 'manage_options' ) ) {
-            wp_enqueue_style( 'corepulse-css', COREPULSE_URL . 'assets/css/admin-bar-pulse.css', array(), time() );
-            wp_enqueue_script( 'corepulse-js', COREPULSE_URL . 'assets/js/interactivity-ui.js', array(), time(), true );
+            wp_enqueue_style( 'corepulse-css', COREPULSE_URL . 'assets/css/admin-bar-pulse.css', array(), '1.2.0' );
+            wp_enqueue_script( 'corepulse-js', COREPULSE_URL . 'assets/js/interactivity-ui.js', array(), '1.2.0', true );
 
             $killed_scripts = get_option( 'corepulse_killed_scripts', array() );
-            
+
             wp_localize_script( 'corepulse-js', 'corepulse_ajax', array(
                 'url'     => admin_url( 'admin-ajax.php' ),
                 'nonce'   => wp_create_nonce( 'corepulse_nonce' ),
-                'killed'  => is_array($killed_scripts) ? $killed_scripts : array(),
+                'killed'  => is_array( $killed_scripts ) ? $killed_scripts : array(),
                 'post_id' => get_queried_object_id() 
             ) );
         }
