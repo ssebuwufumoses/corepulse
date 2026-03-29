@@ -18,7 +18,7 @@ class CorePulse_Kill_Switch {
     public function execute_kill_list() {
         if ( is_admin() ) return;
 
-        // v1.1.0: Headless Simulation Interceptor
+        // v1.2.0: Headless Simulation Interceptor
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         $is_simulating = isset( $_GET['cp_simulate'] ) && $_GET['cp_simulate'] === 'true';
         
